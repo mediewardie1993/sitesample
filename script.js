@@ -126,6 +126,7 @@ function showHandsomeScreen() {
       <h1 class="legend-title handsome-question">Who is the Handsomest of them all?</h1>
       <div class="handsome-input-shell">
         <span class="handsome-label">Your answer</span>
+        <input id="handsome-real-input" class="handsome-real-input" type="text" inputmode="text" autocomplete="off" autocapitalize="none" spellcheck="false">
         <p id="handsome-output" class="handsome-output"><span class="handsome-cursor">|</span></p>
       </div>
       <div class="handsome-actions">
@@ -136,6 +137,8 @@ function showHandsomeScreen() {
 
   const output = document.querySelector("#handsome-output");
   const continueButton = document.querySelector("#handsome-continue");
+  const realInput = document.querySelector("#handsome-real-input");
+  const inputShell = document.querySelector(".handsome-input-shell");
   let progress = 0;
 
   function renderOutput() {
@@ -145,6 +148,10 @@ function showHandsomeScreen() {
     if (progress >= HANDSOME_NAME.length) {
       continueButton.classList.remove("continue-hidden");
     }
+  }
+
+  function focusInput() {
+    realInput.focus({ preventScroll: true });
   }
 
   function handleKeydown(event) {
@@ -167,13 +174,19 @@ function showHandsomeScreen() {
     } else if (event.key === "Enter") {
       openAppFromHandsomeScreen();
     }
+
+    realInput.value = "";
   }
 
   continueButton.addEventListener("click", openAppFromHandsomeScreen);
+  inputShell.addEventListener("click", focusInput);
   window.addEventListener("keydown", handleKeydown, { once: false });
+  realInput.addEventListener("keydown", handleKeydown);
+  focusInput();
 
   function openAppFromHandsomeScreen() {
     window.removeEventListener("keydown", handleKeydown);
+    realInput.removeEventListener("keydown", handleKeydown);
     legendGate.style.display = "none";
     appShell.classList.remove("app-hidden");
     render();
