@@ -140,6 +140,7 @@ function showHandsomeScreen() {
   const realInput = document.querySelector("#handsome-real-input");
   const inputShell = document.querySelector(".handsome-input-shell");
   let progress = 0;
+  let previousRawValue = "";
 
   function renderOutput() {
     const revealed = HANDSOME_NAME.slice(0, progress);
@@ -159,34 +160,39 @@ function showHandsomeScreen() {
       return;
     }
 
-    event.preventDefault();
-
-    if (event.key === "Backspace") {
-      progress = Math.max(0, progress - 1);
-      renderOutput();
-      continueButton.classList.toggle("continue-hidden", progress < HANDSOME_NAME.length);
-      return;
-    }
-
-    if (progress < HANDSOME_NAME.length) {
-      progress += 1;
-      renderOutput();
-    } else if (event.key === "Enter") {
+    if (event.key === "Enter" && progress >= HANDSOME_NAME.length) {
+      event.preventDefault();
       openAppFromHandsomeScreen();
     }
+  }
 
-    realInput.value = "";
+  function handleInput() {
+    const rawValue = realInput.value;
+
+    if (rawValue.length > previousRawValue.length) {
+      const delta = rawValue.length - previousRawValue.length;
+      progress = Math.min(HANDSOME_NAME.length, progress + delta);
+    } else if (rawValue.length < previousRawValue.length) {
+      const delta = previousRawValue.length - rawValue.length;
+      progress = Math.max(0, progress - delta);
+    }
+
+    previousRawValue = rawValue;
+    renderOutput();
+    continueButton.classList.toggle("continue-hidden", progress < HANDSOME_NAME.length);
   }
 
   continueButton.addEventListener("click", openAppFromHandsomeScreen);
   inputShell.addEventListener("click", focusInput);
   window.addEventListener("keydown", handleKeydown, { once: false });
   realInput.addEventListener("keydown", handleKeydown);
+  realInput.addEventListener("input", handleInput);
   focusInput();
 
   function openAppFromHandsomeScreen() {
     window.removeEventListener("keydown", handleKeydown);
     realInput.removeEventListener("keydown", handleKeydown);
+    realInput.removeEventListener("input", handleInput);
     legendGate.style.display = "none";
     appShell.classList.remove("app-hidden");
     render();
