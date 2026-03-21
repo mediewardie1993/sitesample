@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edgin Personal Assigning App</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Cormorant+Garamond:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="legend-gate" class="legend-gate">
+    <div class="legend-card">
+      <p class="eyebrow">Important Entry Check</p>
+      <h1 class="legend-title">It's going to be LEGEN... wait for it.....</h1>
+      <div class="legend-choices">
+        <button class="legend-choice" type="button" data-choice="a">A. D of ang the air bender avatar</button>
+        <button class="legend-choice" type="button" data-choice="b">B. DAIRY QUEEN ICE CREAM..</button>
+        <button class="legend-choice" type="button" data-choice="c">C. DAAAARYYYYYY</button>
+      </div>
+      <p id="legend-message" class="legend-message"></p>
+    </div>
+  </div>
+
+  <div id="app-shell" class="page-shell app-hidden">
+    <header class="hero">
+      <div class="hero-main">
+        <div>
+          <p class="eyebrow">Edgin Personal Assigning App</p>
+          <h1>Edgin Personal Assigning App made by Kuya Medward the super poging kuya</h1>
+        </div>
+        <img class="hero-photo" src="Sidepic.png" alt="Kuya Medward portrait">
+      </div>
+      <div class="hero-actions">
+        <label class="year-picker">
+          <span>From Date</span>
+          <input id="pdf-start-date" type="date">
+        </label>
+        <label class="year-picker">
+          <span>Months</span>
+          <select id="pdf-range-months">
+            <option value="1">1 month</option>
+            <option value="2">2 months</option>
+            <option value="3" selected>3 months</option>
+            <option value="6">6 months</option>
+            <option value="9">9 months</option>
+            <option value="12">12 months</option>
+          </select>
+        </label>
+        <button id="save-range-pdf" class="secondary-btn" type="button">Save Range PDF</button>
+        <button id="save-all-pdf" class="primary-btn" type="button">Save Weekend PDF</button>
+        <button id="reset-demo" class="ghost-btn" type="button">Reset Demo Data</button>
+      </div>
+    </header>
+
+    <section class="registry-card compact-registry">
+      <div class="section-heading">
+        <div>
+          <p class="mini-label">Registry</p>
+          <h2>People and Testimony List</h2>
+        </div>
+      </div>
+
+      <form id="registry-form" class="inline-form compact-form">
+        <select id="registry-type" aria-label="Registry category">
+          <option value="worshipLeaders">Worship Leaders</option>
+          <option value="backups">Backups</option>
+          <option value="musicians">Musicians</option>
+          <option value="emcees">Emcees</option>
+          <option value="pastors">Pastors</option>
+          <option value="testimonies">Testimonies</option>
+        </select>
+        <input id="registry-name" type="text" placeholder="Add a name or testimony entry" autocomplete="off">
+        <button class="secondary-btn" type="submit">Add</button>
+      </form>
+
+      <div id="registry-groups" class="registry-groups"></div>
+    </section>
+
+    <section class="service-sections" id="service-sections"></section>
+  </div>
+
+  <template id="service-section-template">
+    <section class="table-card service-section">
+      <div class="section-heading">
+        <div>
+          <p class="mini-label service-label"></p>
+          <h2 class="service-title"></h2>
+        </div>
+        <button class="secondary-btn export-service-btn" type="button">Save PDF</button>
+      </div>
+
+      <div class="table-wrap">
+        <table class="assignment-table single-service">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Worship Leader</th>
+              <th>Backup</th>
+              <th>Musicians</th>
+              <th>Emcee</th>
+              <th>Pastor</th>
+              <th>Tech</th>
+              <th>Topic</th>
+              <th>Testimony</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <input class="service-date" type="date">
+              </td>
+              <td>
+                <div class="role-cell">
+                  <select class="worshipLeader"></select>
+                  <p class="conflict-text worshipLeader-conflict"></p>
+                </div>
+              </td>
+              <td>
+                <div class="role-cell">
+                  <details class="multi-select">
+                    <summary class="multi-summary backup-summary">Select backups</summary>
+                    <div class="multi-options backups-options"></div>
+                  </details>
+                  <div class="selected-list backups-selected"></div>
+                  <p class="conflict-text backup-conflict"></p>
+                </div>
+              </td>
+              <td>
+                <details class="multi-select">
+                  <summary class="multi-summary">Select musicians</summary>
+                  <div class="multi-options musicians-options"></div>
+                </details>
+                <div class="selected-list musicians-selected"></div>
+              </td>
+              <td>
+                <select class="emcee"></select>
+              </td>
+              <td>
+                <select class="pastor"></select>
+              </td>
+              <td>
+                <input class="tech" type="text" placeholder="Tech team">
+              </td>
+              <td>
+                <input class="topic" type="text" placeholder="Topic">
+              </td>
+              <td>
+                <select class="testimony"></select>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </template>
+
+  <script src="script.js"></script>
+</body>
+</html>
