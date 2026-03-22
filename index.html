@@ -3,86 +3,238 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Edgin Personal Assigning App</title>
+  <title>JCCM Site Hub</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Cormorant+Garamond:wght@600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div id="legend-gate" class="legend-gate">
-    <div class="legend-card">
-      <p class="eyebrow">Important Entry Check</p>
-      <h1 class="legend-title">It's going to be LEGEN... wait for it.....</h1>
-      <div class="legend-choices">
-        <button class="legend-choice" type="button" data-choice="a">A. D of ang the air bender avatar</button>
-        <button class="legend-choice" type="button" data-choice="b">B. DAIRY QUEEN ICE CREAM..</button>
-        <button class="legend-choice" type="button" data-choice="c">C. DAAAARYYYYYY</button>
-      </div>
-      <p id="legend-message" class="legend-message"></p>
+  <div id="login-gate" class="auth-shell">
+    <div class="auth-grid">
+      <section class="auth-card auth-intro">
+        <p class="eyebrow">JCCM Site Hub</p>
+        <h1>Your church site home, Sunday photo wall, and PAW Team Organizer in one place.</h1>
+        <p class="auth-copy">Registrations stay pending until an admin approves them. Sunday photo uploads are available to tech team and admin accounts only.</p>
+        <div class="auth-note">
+          <strong>Starter admin login</strong>
+          <span>Username: <code>admin</code> | Password: <code>admin123</code></span>
+        </div>
+      </section>
+
+      <section class="auth-card">
+        <div class="auth-tabs">
+          <button id="show-login" class="auth-tab auth-tab-active" type="button">Login</button>
+          <button id="show-register" class="auth-tab" type="button">Request Access</button>
+        </div>
+
+        <form id="login-form" class="auth-form">
+          <label class="auth-field">
+            <span>Username</span>
+            <input id="login-username" type="text" autocomplete="username" placeholder="Enter username">
+          </label>
+          <label class="auth-field">
+            <span>Password</span>
+            <input id="login-password" type="password" autocomplete="current-password" placeholder="Enter password">
+          </label>
+          <button class="primary-btn" type="submit">Enter Site</button>
+        </form>
+
+        <form id="register-form" class="auth-form auth-hidden">
+          <label class="auth-field">
+            <span>Full Name</span>
+            <input id="register-name" type="text" autocomplete="name" placeholder="Enter full name">
+          </label>
+          <label class="auth-field">
+            <span>Requested Username</span>
+            <input id="register-username" type="text" autocomplete="username" placeholder="Choose a username">
+          </label>
+          <label class="auth-field">
+            <span>Password</span>
+            <input id="register-password" type="password" autocomplete="new-password" placeholder="Create a password">
+          </label>
+          <label class="auth-field">
+            <span>Request Type</span>
+            <select id="register-role">
+              <option value="member">Member</option>
+              <option value="tech">Tech Team</option>
+            </select>
+          </label>
+          <button class="secondary-btn" type="submit">Send Request</button>
+        </form>
+
+        <p id="auth-message" class="auth-message"></p>
+      </section>
     </div>
   </div>
 
   <div id="app-shell" class="page-shell app-hidden">
-    <header class="hero">
-      <div class="hero-main">
-        <div>
-          <p class="eyebrow">Edgin Personal Assigning App</p>
-          <h1>Edgin Personal Assigning App made by Kuya Medward the super poging kuya</h1>
+    <header class="site-header shell-card">
+      <div class="brand-panel">
+        <div class="brand-mark">
+          <div id="site-logo-fallback" class="logo-fallback">JCCM</div>
+          <img id="site-logo" class="site-logo app-hidden" src="jccm-logo.png" alt="JCCM logo">
         </div>
-        <img class="hero-photo" src="Sidepic.png" alt="Kuya Medward portrait">
+        <div>
+          <p class="eyebrow">JCCM</p>
+          <h1>JCCM Site Hub</h1>
+          <p class="site-copy">Jesus The Cornerstone Christian Ministries</p>
+        </div>
       </div>
-      <div class="hero-actions">
-        <label class="year-picker">
-          <span>From Date</span>
-          <input id="pdf-start-date" type="date">
-        </label>
-        <label class="year-picker">
-          <span>Months</span>
-          <select id="pdf-range-months">
-            <option value="1">1 month</option>
-            <option value="2">2 months</option>
-            <option value="3" selected>3 months</option>
-            <option value="6">6 months</option>
-            <option value="9">9 months</option>
-            <option value="12">12 months</option>
-          </select>
-        </label>
-        <button id="save-range-pdf" class="secondary-btn" type="button">Save Range PDF</button>
-        <button id="save-all-pdf" class="primary-btn" type="button">Save Weekend PDF</button>
-        <button id="reset-demo" class="ghost-btn" type="button">Reset Demo Data</button>
+      <div class="user-panel">
+        <button id="admin-mode-btn" class="ghost-btn app-hidden" type="button">Admin</button>
+        <button id="logout-btn" class="ghost-btn" type="button">Log Out</button>
       </div>
     </header>
 
-    <section class="registry-card compact-registry">
-      <div class="section-heading">
-        <div>
-          <p class="mini-label">Registry</p>
-          <h2>People and Testimony List</h2>
+    <nav class="site-nav shell-card">
+      <button class="nav-btn nav-btn-active" data-section="home" type="button">Home</button>
+      <button class="nav-btn" data-section="photos" type="button">Sunday Photos</button>
+      <button class="nav-btn" data-section="organizer" type="button">PAW Team Organizer</button>
+      <button id="admin-nav-btn" class="nav-btn app-hidden" data-section="admin" type="button">Admin</button>
+    </nav>
+
+    <main class="site-main">
+      <section id="section-home" class="page-section">
+        <article class="shell-card home-carousel-card">
+          <div class="home-title-row">
+            <h2>Last Sunday</h2>
+            <p id="home-mode-badge" class="home-mode-badge"></p>
+          </div>
+          <div class="carousel-shell">
+            <button id="home-carousel-prev" class="carousel-arrow" type="button" aria-label="Previous photo">&#8249;</button>
+            <div class="carousel-stage">
+              <div id="home-carousel-slide" class="carousel-slide"></div>
+              <div id="home-carousel-dots" class="carousel-dots"></div>
+            </div>
+            <button id="home-carousel-next" class="carousel-arrow" type="button" aria-label="Next photo">&#8250;</button>
+          </div>
+        </article>
+
+        <article class="shell-card announcements-card">
+          <div class="home-title-row">
+            <h2>ANNOUNCEMENTS</h2>
+          </div>
+          <textarea id="announcements-input" class="announcements-input" placeholder="Add announcements here"></textarea>
+        </article>
+      </section>
+
+      <section id="section-photos" class="page-section app-hidden">
+        <article class="shell-card">
+          <div class="section-heading">
+            <div>
+              <p class="mini-label">Sunday Photos</p>
+              <h2>Upload and browse</h2>
+            </div>
+          </div>
+
+          <form id="photo-upload-form" class="photo-upload-form">
+            <label class="auth-field">
+              <span>Sunday Date</span>
+              <input id="photo-date" type="date">
+            </label>
+            <label class="auth-field">
+              <span>Photo Caption</span>
+              <input id="photo-caption" type="text" placeholder="Short caption for this upload">
+            </label>
+            <label class="auth-field">
+              <span>Choose Photo</span>
+              <input id="photo-file" type="file" accept="image/*">
+            </label>
+            <button id="photo-upload-button" class="primary-btn" type="submit">Upload Sunday Photo</button>
+          </form>
+
+          <p id="photo-upload-message" class="auth-message"></p>
+          <div id="photo-gallery" class="photo-grid"></div>
+        </article>
+      </section>
+
+      <section id="section-organizer" class="page-section app-hidden">
+        <header class="hero shell-card">
+          <div class="hero-main">
+            <div>
+              <p class="eyebrow">PAW Team Organizer</p>
+              <h1>Plan Adonai and Sunday assignments</h1>
+            </div>
+          </div>
+          <div class="hero-actions">
+            <label class="year-picker">
+              <span>From Date</span>
+              <input id="pdf-start-date" type="date">
+            </label>
+            <label class="year-picker">
+              <span>Months</span>
+              <select id="pdf-range-months">
+                <option value="1">1 month</option>
+                <option value="2">2 months</option>
+                <option value="3" selected>3 months</option>
+                <option value="6">6 months</option>
+                <option value="9">9 months</option>
+                <option value="12">12 months</option>
+              </select>
+            </label>
+            <button id="save-range-pdf" class="secondary-btn" type="button">Save Range PDF</button>
+            <button id="save-all-pdf" class="primary-btn" type="button">Save Weekend PDF</button>
+            <button id="reset-demo" class="ghost-btn" type="button">Reset Demo Data</button>
+          </div>
+        </header>
+
+        <section class="shell-card compact-registry">
+          <div class="section-heading">
+            <div>
+              <p class="mini-label">Registry</p>
+              <h2>People and testimony list</h2>
+            </div>
+          </div>
+
+          <form id="registry-form" class="inline-form compact-form">
+            <select id="registry-type" aria-label="Registry category">
+              <option value="worshipLeaders">Worship Leaders</option>
+              <option value="backups">Backups</option>
+              <option value="musicians">Musicians</option>
+              <option value="emcees">Emcees</option>
+              <option value="pastors">Pastors</option>
+              <option value="testimonies">Testimonies</option>
+            </select>
+            <input id="registry-name" type="text" placeholder="Add a name or testimony entry" autocomplete="off">
+            <button class="secondary-btn" type="submit">Add</button>
+          </form>
+          <p id="organizer-mode-note" class="mode-note"></p>
+
+          <div id="registry-groups" class="registry-groups"></div>
+        </section>
+
+        <section class="service-sections" id="service-sections"></section>
+      </section>
+
+      <section id="section-admin" class="page-section app-hidden">
+        <div class="section-grid">
+          <article class="shell-card">
+            <div class="section-heading">
+              <div>
+                <p class="mini-label">Pending Requests</p>
+                <h2>Approve access</h2>
+              </div>
+            </div>
+            <div id="pending-approvals" class="admin-list"></div>
+          </article>
+
+          <article class="shell-card">
+            <div class="section-heading">
+              <div>
+                <p class="mini-label">Approved Accounts</p>
+                <h2>Manage roles</h2>
+              </div>
+            </div>
+            <div id="approved-accounts" class="admin-list"></div>
+          </article>
         </div>
-      </div>
-
-      <form id="registry-form" class="inline-form compact-form">
-        <select id="registry-type" aria-label="Registry category">
-          <option value="worshipLeaders">Worship Leaders</option>
-          <option value="backups">Backups</option>
-          <option value="musicians">Musicians</option>
-          <option value="emcees">Emcees</option>
-          <option value="pastors">Pastors</option>
-          <option value="testimonies">Testimonies</option>
-        </select>
-        <input id="registry-name" type="text" placeholder="Add a name or testimony entry" autocomplete="off">
-        <button class="secondary-btn" type="submit">Add</button>
-      </form>
-
-      <div id="registry-groups" class="registry-groups"></div>
-    </section>
-
-    <section class="service-sections" id="service-sections"></section>
+      </section>
+    </main>
   </div>
 
   <template id="service-section-template">
-    <section class="table-card service-section">
+    <section class="shell-card service-section">
       <div class="section-heading">
         <div>
           <p class="mini-label service-label"></p>
