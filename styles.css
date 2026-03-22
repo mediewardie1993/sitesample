@@ -60,6 +60,41 @@ code {
   padding: 24px;
 }
 
+.intro-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at top, rgba(88, 173, 125, 0.2), transparent 34%),
+    linear-gradient(160deg, rgba(8, 18, 14, 0.96) 0%, rgba(13, 28, 22, 0.98) 100%);
+}
+
+.intro-card {
+  width: min(980px, 100%);
+  display: grid;
+  justify-items: center;
+  gap: 18px;
+  text-align: center;
+}
+
+.intro-title {
+  margin: 0;
+  font-family: "Cormorant Garamond", serif;
+  font-size: clamp(2.5rem, 7vw, 5.4rem);
+  line-height: 0.95;
+}
+
+.intro-photo {
+  width: min(78vw, 620px);
+  max-height: 72vh;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 30px 70px rgba(0, 0, 0, 0.45));
+}
+
 .auth-grid,
 .section-grid {
   display: grid;
@@ -194,41 +229,55 @@ code {
   align-items: center;
 }
 
+.site-header {
+  position: relative;
+  justify-content: center;
+  padding-top: 12px;
+  padding-bottom: 10px;
+  border: 0;
+  background: transparent;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
 .brand-panel {
   display: flex;
   align-items: center;
-  gap: 18px;
-}
-
-.brand-mark {
-  width: 92px;
-  height: 92px;
-  border-radius: 22px;
-  border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.04);
-  display: grid;
-  place-items: center;
-  overflow: hidden;
-  flex: 0 0 auto;
+  justify-content: center;
+  width: 100%;
+  min-height: 360px;
+  position: relative;
+  z-index: 1;
 }
 
 .site-logo {
-  width: 100%;
-  height: 100%;
+  width: auto;
+  max-width: min(1100px, 96vw);
+  height: 360px;
   object-fit: contain;
-  background: #09120e;
+  background: transparent;
+  display: block;
 }
 
 .logo-fallback {
+  display: none;
   font-weight: 700;
   letter-spacing: 0.12em;
   color: var(--accent-strong);
+  font-size: 2rem;
 }
 
 .site-nav {
-  margin-top: 16px;
+  margin-top: 10px;
   justify-content: flex-start;
   flex-wrap: wrap;
+  width: min(1120px, calc(100% - 120px));
+  margin-left: auto;
+  margin-right: auto;
+  border: 0;
+  background: transparent;
+  backdrop-filter: none;
+  box-shadow: none;
 }
 
 .site-main {
@@ -244,6 +293,14 @@ code {
   display: flex;
   align-items: center;
   gap: 12px;
+  position: absolute;
+  top: 16px;
+  right: 24px;
+  z-index: 4;
+  padding: 10px 12px;
+  border-radius: 999px;
+  background: rgba(8, 18, 14, 0.72);
+  backdrop-filter: blur(10px);
 }
 
 .feature-card {
@@ -425,6 +482,11 @@ code {
   padding: 14px;
 }
 
+.photo-delete-btn {
+  justify-self: start;
+  margin-top: 6px;
+}
+
 .photo-meta strong {
   font-size: 0.95rem;
 }
@@ -569,6 +631,11 @@ code {
   border-color: var(--line);
 }
 
+#admin-mode-btn,
+#logout-btn {
+  padding: 10px 14px;
+}
+
 .ghost-btn:disabled,
 .primary-btn:disabled,
 .secondary-btn:disabled {
@@ -661,10 +728,51 @@ select:focus,
   gap: 8px;
 }
 
+.tag-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tag-status {
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #ffd6d6;
+  background: rgba(191, 63, 63, 0.18);
+  border: 1px solid rgba(255, 127, 127, 0.24);
+  border-radius: 999px;
+  padding: 3px 7px;
+}
+
 .service-sections {
   display: grid;
   gap: 18px;
   margin-top: 18px;
+}
+
+.person-schedule-results {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.person-schedule-card {
+  display: grid;
+  gap: 6px;
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.person-schedule-card strong {
+  font-size: 1rem;
+}
+
+.person-schedule-meta {
+  color: var(--muted);
+  font-size: 0.9rem;
 }
 
 .table-wrap {
@@ -769,7 +877,16 @@ select:focus,
   .site-header,
   .brand-panel {
     flex-direction: column;
-    align-items: start;
+    align-items: center;
+  }
+
+  .site-nav {
+    width: 100%;
+  }
+
+  .user-panel {
+    position: static;
+    justify-content: center;
   }
 }
 
@@ -798,7 +915,8 @@ select:focus,
   }
 
   .user-panel {
-    justify-content: flex-end;
+    position: static;
+    justify-content: center;
     flex-wrap: wrap;
   }
 

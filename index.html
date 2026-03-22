@@ -10,11 +10,20 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <div id="intro-gate" class="intro-gate">
+    <div class="intro-card">
+      <p class="eyebrow">For Bebi</p>
+      <h1 class="intro-title">i love you bebi</h1>
+      <img class="intro-photo" src="Sidepic.png" alt="Side picture">
+      <button id="enter-site-btn" class="primary-btn" type="button">Continue</button>
+    </div>
+  </div>
+
   <div id="login-gate" class="auth-shell">
     <div class="auth-grid">
       <section class="auth-card auth-intro">
         <p class="eyebrow">JCCM Site Hub</p>
-        <h1>Your church site home, Sunday photo wall, and PAW Team Organizer in one place.</h1>
+        <h1>Your church site home, Sunday photo wall, and PAW Schedule in one place.</h1>
         <p class="auth-copy">Registrations stay pending until an admin approves them. Sunday photo uploads are available to tech team and admin accounts only.</p>
         <div class="auth-note">
           <strong>Starter admin login</strong>
@@ -71,15 +80,8 @@
   <div id="app-shell" class="page-shell app-hidden">
     <header class="site-header shell-card">
       <div class="brand-panel">
-        <div class="brand-mark">
-          <div id="site-logo-fallback" class="logo-fallback">JCCM</div>
-          <img id="site-logo" class="site-logo app-hidden" src="jccm-logo.png" alt="JCCM logo">
-        </div>
-        <div>
-          <p class="eyebrow">JCCM</p>
-          <h1>JCCM Site Hub</h1>
-          <p class="site-copy">Jesus The Cornerstone Christian Ministries</p>
-        </div>
+        <div id="site-logo-fallback" class="logo-fallback">JCCM</div>
+        <img id="site-logo" class="site-logo app-hidden" src="jccm-logo.png" alt="JCCM logo">
       </div>
       <div class="user-panel">
         <button id="admin-mode-btn" class="ghost-btn app-hidden" type="button">Admin</button>
@@ -90,7 +92,11 @@
     <nav class="site-nav shell-card">
       <button class="nav-btn nav-btn-active" data-section="home" type="button">Home</button>
       <button class="nav-btn" data-section="photos" type="button">Sunday Photos</button>
-      <button class="nav-btn" data-section="organizer" type="button">PAW Team Organizer</button>
+      <button class="nav-btn" data-section="adonai" type="button">Adonai</button>
+      <button class="nav-btn" data-section="hamakom" type="button">Hamakom</button>
+      <button class="nav-btn" data-section="agape" type="button">Agape</button>
+      <button class="nav-btn" data-section="organizer" type="button">PAW Schedule</button>
+      <button class="nav-btn" data-section="about" type="button">About Us</button>
       <button id="admin-nav-btn" class="nav-btn app-hidden" data-section="admin" type="button">Admin</button>
     </nav>
 
@@ -104,7 +110,9 @@
           <div class="carousel-shell">
             <button id="home-carousel-prev" class="carousel-arrow" type="button" aria-label="Previous photo">&#8249;</button>
             <div class="carousel-stage">
-              <div id="home-carousel-slide" class="carousel-slide"></div>
+              <div id="home-carousel-slide" class="carousel-slide">
+                <img class="carousel-photo" src="sample-photos/fixed-photo.jpg" alt="Sunday photo">
+              </div>
               <div id="home-carousel-dots" class="carousel-dots"></div>
             </div>
             <button id="home-carousel-next" class="carousel-arrow" type="button" aria-label="Next photo">&#8250;</button>
@@ -139,13 +147,79 @@
             </label>
             <label class="auth-field">
               <span>Choose Photo</span>
-              <input id="photo-file" type="file" accept="image/*">
+              <input id="photo-file" type="file" accept="image/*" multiple>
             </label>
             <button id="photo-upload-button" class="primary-btn" type="submit">Upload Sunday Photo</button>
           </form>
 
           <p id="photo-upload-message" class="auth-message"></p>
+
+          <form id="fixed-photo-form" class="photo-upload-form">
+            <label class="auth-field">
+              <span>Fixed Photo Date</span>
+              <input id="fixed-photo-date" type="date">
+            </label>
+            <label class="auth-field">
+              <span>Fixed Photo Caption</span>
+              <input id="fixed-photo-caption" type="text" placeholder="Caption for the fixed photo">
+            </label>
+            <label class="auth-field">
+              <span>Change Fixed Photo</span>
+              <input id="fixed-photo-file" type="file" accept="image/*">
+            </label>
+            <button id="fixed-photo-button" class="secondary-btn" type="submit">Update Fixed Photo</button>
+          </form>
+
+          <p id="fixed-photo-message" class="auth-message"></p>
           <div id="photo-gallery" class="photo-grid"></div>
+        </article>
+      </section>
+
+      <section id="section-adonai" class="page-section app-hidden">
+        <article class="shell-card">
+          <div class="section-heading">
+            <div>
+              <p class="mini-label">Adonai</p>
+              <h2>Coming soon</h2>
+            </div>
+          </div>
+          <div class="empty-card">This page is ready for Adonai content.</div>
+        </article>
+      </section>
+
+      <section id="section-hamakom" class="page-section app-hidden">
+        <article class="shell-card">
+          <div class="section-heading">
+            <div>
+              <p class="mini-label">Hamakom</p>
+              <h2>Coming soon</h2>
+            </div>
+          </div>
+          <div class="empty-card">This page is ready for Hamakom content.</div>
+        </article>
+      </section>
+
+      <section id="section-agape" class="page-section app-hidden">
+        <article class="shell-card">
+          <div class="section-heading">
+            <div>
+              <p class="mini-label">Agape</p>
+              <h2>Coming soon</h2>
+            </div>
+          </div>
+          <div class="empty-card">This page is ready for Agape content.</div>
+        </article>
+      </section>
+
+      <section id="section-about" class="page-section app-hidden">
+        <article class="shell-card">
+          <div class="section-heading">
+            <div>
+              <p class="mini-label">About Us</p>
+              <h2>Coming soon</h2>
+            </div>
+          </div>
+          <div class="empty-card">This page is ready for About Us content.</div>
         </article>
       </section>
 
@@ -153,7 +227,7 @@
         <header class="hero shell-card">
           <div class="hero-main">
             <div>
-              <p class="eyebrow">PAW Team Organizer</p>
+              <p class="eyebrow">PAW Schedule</p>
               <h1>Plan Adonai and Sunday assignments</h1>
             </div>
           </div>
@@ -173,35 +247,78 @@
                 <option value="12">12 months</option>
               </select>
             </label>
-            <button id="save-range-pdf" class="secondary-btn" type="button">Save Range PDF</button>
-            <button id="save-all-pdf" class="primary-btn" type="button">Save Weekend PDF</button>
+            <button id="save-adonai-pdf" class="secondary-btn" type="button">Save Adonai PDF</button>
+            <button id="save-sunday-pdf" class="secondary-btn" type="button">Save Sunday PDF</button>
+            <button id="save-all-pdf" class="primary-btn" type="button">Save Both PDF</button>
             <button id="reset-demo" class="ghost-btn" type="button">Reset Demo Data</button>
           </div>
         </header>
 
-        <section class="shell-card compact-registry">
+        <div class="section-grid organizer-grid">
+          <section id="registry-card" class="shell-card compact-registry">
+            <div class="section-heading">
+              <div>
+                <p class="mini-label">Registry</p>
+                <h2>Worship leaders, backups, and musicians</h2>
+              </div>
+            </div>
+
+            <form id="registry-form" class="inline-form compact-form">
+              <select id="registry-type" aria-label="Registry category">
+                <option value="worshipLeaders">Worship Leaders</option>
+                <option value="backups">Backups</option>
+                <option value="musicians">Musicians</option>
+              </select>
+              <input id="registry-name" type="text" placeholder="Add a name" autocomplete="off">
+              <button class="secondary-btn" type="submit">Add</button>
+            </form>
+            <p id="organizer-mode-note" class="mode-note"></p>
+
+            <div id="registry-groups" class="registry-groups"></div>
+          </section>
+
+          <aside id="da-list-card" class="shell-card compact-registry">
+            <div class="section-heading">
+              <div>
+                <p class="mini-label">DA List</p>
+                <h2>Disciplinary action</h2>
+              </div>
+            </div>
+            <form id="pastor-request-form" class="inline-form compact-form">
+              <input id="pastor-request-name" type="text" placeholder="Add person to DA list" autocomplete="off">
+              <button class="secondary-btn" type="submit">Add</button>
+            </form>
+            <div id="pastor-request-list" class="tag-list pastor-request-list"></div>
+          </aside>
+        </div>
+
+        <section class="shell-card">
           <div class="section-heading">
             <div>
-              <p class="mini-label">Registry</p>
-              <h2>People and testimony list</h2>
+              <p class="mini-label">See Person Schedule</p>
+              <h2>View assignments by person</h2>
             </div>
           </div>
-
-          <form id="registry-form" class="inline-form compact-form">
-            <select id="registry-type" aria-label="Registry category">
-              <option value="worshipLeaders">Worship Leaders</option>
-              <option value="backups">Backups</option>
-              <option value="musicians">Musicians</option>
-              <option value="emcees">Emcees</option>
-              <option value="pastors">Pastors</option>
-              <option value="testimonies">Testimonies</option>
-            </select>
-            <input id="registry-name" type="text" placeholder="Add a name or testimony entry" autocomplete="off">
-            <button class="secondary-btn" type="submit">Add</button>
+          <form id="person-schedule-form" class="inline-form compact-form">
+            <select id="person-schedule-name" aria-label="Person schedule lookup"></select>
+            <label class="year-picker">
+              <span>From Date</span>
+              <input id="person-schedule-start" type="date">
+            </label>
+            <label class="year-picker">
+              <span>Months</span>
+              <select id="person-schedule-months">
+                <option value="1">1 month</option>
+                <option value="2">2 months</option>
+                <option value="3" selected>3 months</option>
+                <option value="6">6 months</option>
+                <option value="9">9 months</option>
+                <option value="12">12 months</option>
+              </select>
+            </label>
+            <button class="secondary-btn" type="submit">Show Schedule</button>
           </form>
-          <p id="organizer-mode-note" class="mode-note"></p>
-
-          <div id="registry-groups" class="registry-groups"></div>
+          <div id="person-schedule-results" class="person-schedule-results"></div>
         </section>
 
         <section class="service-sections" id="service-sections"></section>
@@ -249,19 +366,14 @@
             <tr>
               <th>Date</th>
               <th>Worship Leader</th>
-              <th>Backup</th>
+              <th>Backups</th>
               <th>Musicians</th>
-              <th>Emcee</th>
-              <th>Pastor</th>
-              <th>Tech</th>
-              <th>Topic</th>
-              <th>Testimony</th>
             </tr>
           </thead>
           <tbody>
             <tr>
               <td>
-                <input class="service-date" type="date">
+                <select class="service-date"></select>
               </td>
               <td>
                 <div class="role-cell">
@@ -285,21 +397,6 @@
                   <div class="multi-options musicians-options"></div>
                 </details>
                 <div class="selected-list musicians-selected"></div>
-              </td>
-              <td>
-                <select class="emcee"></select>
-              </td>
-              <td>
-                <select class="pastor"></select>
-              </td>
-              <td>
-                <input class="tech" type="text" placeholder="Tech team">
-              </td>
-              <td>
-                <input class="topic" type="text" placeholder="Topic">
-              </td>
-              <td>
-                <select class="testimony"></select>
               </td>
             </tr>
           </tbody>
