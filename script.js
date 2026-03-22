@@ -44,13 +44,6 @@ const defaultAuth = {
 
 const samplePhotos = [
   {
-    id: "sample-1",
-    date: "2026-03-15",
-    caption: "JCCM Sunday Service",
-    imagePath: "sample-photos/502940991_1009229358080888_1129196559297250763_n.jpg",
-    uploadedBy: "JCCM Sample"
-  },
-  {
     id: "sample-2",
     date: "2026-03-15",
     caption: "Praise and Worship Moments",
@@ -76,6 +69,13 @@ const samplePhotos = [
     date: "2026-03-15",
     caption: "Church Snapshot",
     imagePath: "sample-photos/ASDASD.jpg",
+    uploadedBy: "JCCM Sample"
+  },
+  {
+    id: "sample-1",
+    date: "2026-03-15",
+    caption: "JCCM Sunday Service",
+    imagePath: "sample-photos/502940991_1009229358080888_1129196559297250763_n.jpg",
     uploadedBy: "JCCM Sample"
   }
 ];
@@ -381,7 +381,7 @@ function renderSections() {
 function renderPhotos() {
   renderHomeCarousel();
   startCarouselAutoplay();
-  renderPhotoList(photoGallery, photos, "No Sunday photos uploaded yet.");
+  renderPhotoList(photoGallery, getDisplayPhotos(), "No Sunday photos uploaded yet.");
   announcementsInput.value = announcements;
   announcementsInput.disabled = !canEditHomeContent();
   homeModeBadge.textContent = canEditHomeContent() ? "Editing enabled" : "View only";
@@ -400,7 +400,7 @@ function renderPhotos() {
 }
 
 function renderHomeCarousel() {
-  const carouselPhotos = photos.slice(0, 8);
+  const carouselPhotos = getDisplayPhotos().slice(0, 8);
   homeCarouselDots.innerHTML = "";
 
   if (carouselPhotos.length === 0) {
@@ -416,17 +416,26 @@ function renderHomeCarousel() {
   }
 
   const photo = carouselPhotos[homeCarouselIndex];
-  homeCarouselSlide.innerHTML = "";
+  const source = getPhotoSource(photo);
+  homeCarouselSlide.innerHTML = `<div class="carousel-empty">Loading photo...</div>`;
 
-  const img = document.createElement("img");
-  img.className = "carousel-photo carousel-fade";
-  img.alt = photo.caption || "Sunday photo";
-  img.src = getPhotoSource(photo);
-  img.addEventListener("error", () => {
+  const preloader = new Image();
+  preloader.onload = () => {
+    if (getDisplayPhotos().slice(0, 8)[homeCarouselIndex]?.id !== photo.id) {
+      return;
+    }
+
+    homeCarouselSlide.innerHTML = "";
+    const img = document.createElement("img");
+    img.className = "carousel-photo carousel-fade";
+    img.alt = photo.caption || "Sunday photo";
+    img.src = source;
+    homeCarouselSlide.appendChild(img);
+  };
+  preloader.onerror = () => {
     skipBrokenCarouselPhoto();
-  }, { once: true });
-
-  homeCarouselSlide.appendChild(img);
+  };
+  preloader.src = source;
 
   carouselPhotos.forEach((entry, index) => {
     const dot = document.createElement("button");
@@ -445,7 +454,7 @@ function renderHomeCarousel() {
 }
 
 function moveCarousel(direction) {
-  const carouselPhotos = photos.slice(0, 8);
+  const carouselPhotos = getDisplayPhotos().slice(0, 8);
   if (carouselPhotos.length <= 1) {
     return;
   }
@@ -456,7 +465,7 @@ function moveCarousel(direction) {
 }
 
 function skipBrokenCarouselPhoto() {
-  const carouselPhotos = photos.slice(0, 8);
+  const carouselPhotos = getDisplayPhotos().slice(0, 8);
   if (carouselPhotos.length <= 1) {
     homeCarouselSlide.innerHTML = `<div class="carousel-empty">This photo could not be loaded.</div>`;
     return;
@@ -1133,10 +1142,14 @@ function getPhotoSource(photo) {
   return photo.imageData || photo.imagePath || "";
 }
 
+function getDisplayPhotos() {
+  return photos.filter((photo) => Boolean(getPhotoSource(photo)));
+}
+
 function startCarouselAutoplay() {
   stopCarouselAutoplay();
 
-  const carouselPhotos = photos.slice(0, 8);
+  const carouselPhotos = getDisplayPhotos().slice(0, 8);
   if (activeSection !== "home" || carouselPhotos.length <= 1) {
     return;
   }
