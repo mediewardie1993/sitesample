@@ -39,6 +39,7 @@ const defaultMinistries = [
   "Adonai",
   "Hamakom",
   "Agape",
+  "Dance",
   "Emcee",
   "Info",
   "Pastoral",
@@ -62,6 +63,11 @@ const temporaryMinistryTestAccounts = [
   { id: "temp-agape-primary", name: "Agape Test Primary", username: "AgapeTestPrimary", ministry: "Agape", ministryRole: "ministryPrimaryLeader" },
   { id: "temp-agape-officer", name: "Agape Test Officer", username: "AgapeTestOfficer", ministry: "Agape", ministryRole: "ministryOfficer" },
   { id: "temp-agape-member", name: "Agape Test Member", username: "AgapeTestMember", ministry: "Agape", ministryRole: "ministryMember" },
+  { id: "temp-dance-head", name: "Dance Test Head", username: "DanceTestHead", ministry: "Dance", ministryRole: "ministryHead" },
+  { id: "temp-dance-assistant", name: "Dance Test Assistant", username: "DanceTestAssistant", ministry: "Dance", ministryRole: "ministryAssistant" },
+  { id: "temp-dance-primary", name: "Dance Test Primary", username: "DanceTestPrimary", ministry: "Dance", ministryRole: "ministryPrimaryLeader" },
+  { id: "temp-dance-officer", name: "Dance Test Officer", username: "DanceTestOfficer", ministry: "Dance", ministryRole: "ministryOfficer" },
+  { id: "temp-dance-member", name: "Dance Test Member", username: "DanceTestMember", ministry: "Dance", ministryRole: "ministryMember" },
   { id: "temp-emcee-head", name: "Emcee Test Head", username: "EmceeTestHead", ministry: "Emcee", ministryRole: "ministryHead" },
   { id: "temp-emcee-assistant", name: "Emcee Test Assistant", username: "EmceeTestAssistant", ministry: "Emcee", ministryRole: "ministryAssistant" },
   { id: "temp-emcee-primary", name: "Emcee Test Primary", username: "EmceeTestPrimary", ministry: "Emcee", ministryRole: "ministryPrimaryLeader" },
@@ -217,7 +223,8 @@ const announcementBoardMeta = {
   home: { label: "Home", ministry: "Emcee", grantMinistries: ["Emcee", "Info"] },
   adonai: { label: "Adonai", ministry: "Adonai", grantMinistries: ["Adonai"] },
   hamakom: { label: "Hamakom", ministry: "Hamakom", grantMinistries: ["Hamakom"] },
-  agape: { label: "Agape", ministry: "Agape", grantMinistries: ["Agape"] }
+  agape: { label: "Agape", ministry: "Agape", grantMinistries: ["Agape"] },
+  dance: { label: "Dance", ministry: "Dance", grantMinistries: ["Dance"] }
 };
 
 const samplePhotos = [
@@ -276,10 +283,11 @@ const photoSectionMeta = {
   sunday: { label: "Sunday Service", pageSection: "home" },
   adonai: { label: "Adonai", pageSection: "adonai" },
   hamakom: { label: "Hamakom", pageSection: "hamakom" },
-  agape: { label: "Agape", pageSection: "agape" }
+  agape: { label: "Agape", pageSection: "agape" },
+  dance: { label: "Dance", pageSection: "dance" }
 };
 
-const sectionIds = ["home", "seats", "profile", "search", "photos", "adonai", "hamakom", "agape", "about", "organizer", "admin"];
+const sectionIds = ["home", "seats", "profile", "search", "photos", "adonai", "hamakom", "agape", "dance", "about", "organizer", "admin"];
 
 const loginGate = document.querySelector("#login-gate");
 const appShell = document.querySelector("#app-shell");
@@ -364,22 +372,27 @@ const announcementsInput = document.querySelector("#announcements-input");
 const adonaiAnnouncementsInput = document.querySelector("#adonai-announcements-input");
 const hamakomAnnouncementsInput = document.querySelector("#hamakom-announcements-input");
 const agapeAnnouncementsInput = document.querySelector("#agape-announcements-input");
+const danceAnnouncementsInput = document.querySelector("#dance-announcements-input");
 const announcementsPosts = document.querySelector("#announcements-posts");
 const adonaiAnnouncementsPosts = document.querySelector("#adonai-announcements-posts");
 const hamakomAnnouncementsPosts = document.querySelector("#hamakom-announcements-posts");
 const agapeAnnouncementsPosts = document.querySelector("#agape-announcements-posts");
+const danceAnnouncementsPosts = document.querySelector("#dance-announcements-posts");
 const announcementsSubmit = document.querySelector("#announcements-submit");
 const adonaiAnnouncementsSubmit = document.querySelector("#adonai-announcements-submit");
 const hamakomAnnouncementsSubmit = document.querySelector("#hamakom-announcements-submit");
 const agapeAnnouncementsSubmit = document.querySelector("#agape-announcements-submit");
+const danceAnnouncementsSubmit = document.querySelector("#dance-announcements-submit");
 const announcementsMessage = document.querySelector("#announcements-message");
 const adonaiAnnouncementsMessage = document.querySelector("#adonai-announcements-message");
 const hamakomAnnouncementsMessage = document.querySelector("#hamakom-announcements-message");
 const agapeAnnouncementsMessage = document.querySelector("#agape-announcements-message");
+const danceAnnouncementsMessage = document.querySelector("#dance-announcements-message");
 const announcementsGrantPanel = document.querySelector("#announcements-grant-panel");
 const adonaiAnnouncementsGrantPanel = document.querySelector("#adonai-announcements-grant-panel");
 const hamakomAnnouncementsGrantPanel = document.querySelector("#hamakom-announcements-grant-panel");
 const agapeAnnouncementsGrantPanel = document.querySelector("#agape-announcements-grant-panel");
+const danceAnnouncementsGrantPanel = document.querySelector("#dance-announcements-grant-panel");
 const announcementsGrantUser = document.querySelector("#announcements-grant-user");
 const announcementsGrantUserList = document.querySelector("#announcements-grant-user-list");
 const adonaiAnnouncementsGrantUser = document.querySelector("#adonai-announcements-grant-user");
@@ -388,14 +401,18 @@ const hamakomAnnouncementsGrantUser = document.querySelector("#hamakom-announcem
 const hamakomAnnouncementsGrantUserList = document.querySelector("#hamakom-announcements-grant-user-list");
 const agapeAnnouncementsGrantUser = document.querySelector("#agape-announcements-grant-user");
 const agapeAnnouncementsGrantUserList = document.querySelector("#agape-announcements-grant-user-list");
+const danceAnnouncementsGrantUser = document.querySelector("#dance-announcements-grant-user");
+const danceAnnouncementsGrantUserList = document.querySelector("#dance-announcements-grant-user-list");
 const announcementsGrantButton = document.querySelector("#announcements-grant-button");
 const adonaiAnnouncementsGrantButton = document.querySelector("#adonai-announcements-grant-button");
 const hamakomAnnouncementsGrantButton = document.querySelector("#hamakom-announcements-grant-button");
 const agapeAnnouncementsGrantButton = document.querySelector("#agape-announcements-grant-button");
+const danceAnnouncementsGrantButton = document.querySelector("#dance-announcements-grant-button");
 const announcementsGrants = document.querySelector("#announcements-grants");
 const adonaiAnnouncementsGrants = document.querySelector("#adonai-announcements-grants");
 const hamakomAnnouncementsGrants = document.querySelector("#hamakom-announcements-grants");
 const agapeAnnouncementsGrants = document.querySelector("#agape-announcements-grants");
+const danceAnnouncementsGrants = document.querySelector("#dance-announcements-grants");
 const photoGallery = document.querySelector("#photo-gallery");
 const adonaiCarouselSlide = document.querySelector("#adonai-carousel-slide");
 const adonaiCarouselDots = document.querySelector("#adonai-carousel-dots");
@@ -409,6 +426,10 @@ const agapeCarouselSlide = document.querySelector("#agape-carousel-slide");
 const agapeCarouselDots = document.querySelector("#agape-carousel-dots");
 const agapeCarouselPrev = document.querySelector("#agape-carousel-prev");
 const agapeCarouselNext = document.querySelector("#agape-carousel-next");
+const danceCarouselSlide = document.querySelector("#dance-carousel-slide");
+const danceCarouselDots = document.querySelector("#dance-carousel-dots");
+const danceCarouselPrev = document.querySelector("#dance-carousel-prev");
+const danceCarouselNext = document.querySelector("#dance-carousel-next");
 const photoUploadForm = document.querySelector("#photo-upload-form");
 const photoSectionSelect = document.querySelector("#photo-section");
 const photoDate = document.querySelector("#photo-date");
@@ -455,6 +476,7 @@ const saveAllButton = document.querySelector("#save-all-pdf");
 const resetDemoButton = document.querySelector("#reset-demo");
 const personScheduleForm = document.querySelector("#person-schedule-form");
 const personScheduleName = document.querySelector("#person-schedule-name");
+const personScheduleNameList = document.querySelector("#person-schedule-name-list");
 const personScheduleStart = document.querySelector("#person-schedule-start");
 const personScheduleMonths = document.querySelector("#person-schedule-months");
 const personScheduleResults = document.querySelector("#person-schedule-results");
@@ -468,7 +490,7 @@ let photoUploadGrants = loadPhotoUploadGrants();
 let currentUser = restoreSession();
 let activeSection = restoreActiveSection();
 let adminMode = false;
-let carouselIndexes = { sunday: 0, adonai: 0, hamakom: 0, agape: 0 };
+let carouselIndexes = { sunday: 0, adonai: 0, hamakom: 0, agape: 0, dance: 0 };
 let announcements = loadAnnouncements();
 let seatLayoutState = loadSeatLayoutState();
 let homeCarouselTimer = null;
@@ -482,7 +504,8 @@ const carouselRefs = {
   sunday: { slide: homeCarouselSlide, dots: homeCarouselDots, prev: homeCarouselPrev, next: homeCarouselNext },
   adonai: { slide: adonaiCarouselSlide, dots: adonaiCarouselDots, prev: adonaiCarouselPrev, next: adonaiCarouselNext },
   hamakom: { slide: hamakomCarouselSlide, dots: hamakomCarouselDots, prev: hamakomCarouselPrev, next: hamakomCarouselNext },
-  agape: { slide: agapeCarouselSlide, dots: agapeCarouselDots, prev: agapeCarouselPrev, next: agapeCarouselNext }
+  agape: { slide: agapeCarouselSlide, dots: agapeCarouselDots, prev: agapeCarouselPrev, next: agapeCarouselNext },
+  dance: { slide: danceCarouselSlide, dots: danceCarouselDots, prev: danceCarouselPrev, next: danceCarouselNext }
 };
 
 const announcementRefs = {
@@ -529,6 +552,17 @@ const announcementRefs = {
     grantUserList: agapeAnnouncementsGrantUserList,
     grantButton: agapeAnnouncementsGrantButton,
     grants: agapeAnnouncementsGrants
+  },
+  dance: {
+    input: danceAnnouncementsInput,
+    posts: danceAnnouncementsPosts,
+    submit: danceAnnouncementsSubmit,
+    message: danceAnnouncementsMessage,
+    grantPanel: danceAnnouncementsGrantPanel,
+    grantUser: danceAnnouncementsGrantUser,
+    grantUserList: danceAnnouncementsGrantUserList,
+    grantButton: danceAnnouncementsGrantButton,
+    grants: danceAnnouncementsGrants
   }
 };
 
@@ -580,6 +614,8 @@ function initializeApp() {
   hamakomCarouselNext.addEventListener("click", () => moveCarousel("hamakom", 1));
   agapeCarouselPrev.addEventListener("click", () => moveCarousel("agape", -1));
   agapeCarouselNext.addEventListener("click", () => moveCarousel("agape", 1));
+  danceCarouselPrev.addEventListener("click", () => moveCarousel("dance", -1));
+  danceCarouselNext.addEventListener("click", () => moveCarousel("dance", 1));
   Object.entries(announcementRefs).forEach(([sectionKey, refs]) => {
     refs.submit.addEventListener("click", () => handleAnnouncementSubmit(sectionKey));
     refs.grantButton.addEventListener("click", () => handleAnnouncementGrant(sectionKey));
@@ -2276,11 +2312,15 @@ function renderRegistryGroups(syncedRegistry = getPawProfileRegistryNames()) {
 function renderPersonScheduleControls() {
   const people = getAllRegistryPeople();
   const selected = personScheduleName.value;
-  const placeholder = people.length > 0 ? "Select a person" : "No registered people yet";
-  personScheduleName.innerHTML = `<option value="">${placeholder}</option>${people.map((name) => `<option value="${escapeHtml(name)}">${escapeHtml(getDisplayName(name))}</option>`).join("")}`;
+  const placeholder = people.length > 0 ? "Type or pick a person" : "No registered people yet";
+  personScheduleName.placeholder = placeholder;
+  personScheduleNameList.innerHTML = people.map((name) => `<option value="${escapeHtml(getDisplayName(name))}"></option>`).join("");
 
-  if (selected && people.includes(selected)) {
-    personScheduleName.value = selected;
+  if (selected) {
+    const matchedPerson = people.find((name) => samePerson(name, selected));
+    if (matchedPerson) {
+      personScheduleName.value = getDisplayName(matchedPerson);
+    }
   }
 
   if (!personScheduleStart.value) {
@@ -2317,7 +2357,8 @@ function renderPastorRequests() {
 
 function renderPersonScheduleResults() {
   personScheduleResults.innerHTML = "";
-  const person = personScheduleName.value;
+  const personInput = personScheduleName.value;
+  const person = getAllRegistryPeople().find((name) => samePerson(name, personInput));
 
   if (!person) {
     personScheduleResults.innerHTML = `<div class="empty-card">Choose a person to view assignments in the selected date range.</div>`;
@@ -2391,12 +2432,21 @@ function renderServices() {
 }
 
 function bindServiceDateSelect(section, service) {
-  const select = section.querySelector(".service-date");
+  const input = section.querySelector(".service-date");
+  const dataList = section.querySelector(".service-date-list");
   const options = getServiceDateOptions(service.id);
-  populateDateSelect(select, options, service.date, service.id);
+  populateDateInput(input, dataList, options, service.date, service.id);
 
-  select.addEventListener("change", (event) => {
-    state.services[service.id].date = event.target.value;
+  input.addEventListener("change", (event) => {
+    const nextValue = normalizeDate(event.target.value);
+    if (!nextValue) {
+      state.services[service.id].date = "";
+      upsertHistoryForService(service.id);
+      persistOrganizer();
+      renderServices();
+      return;
+    }
+    state.services[service.id].date = nextValue;
     upsertHistoryForService(service.id);
     persistOrganizer();
     renderServices();
@@ -2405,7 +2455,11 @@ function bindServiceDateSelect(section, service) {
 
 function getServiceDateOptions(serviceId) {
   const targetDay = serviceId === "saturday" ? 6 : 0;
-  const anchorDate = state.services[serviceId].date || pdfStartDateInput.value || normalizeDate(new Date().toISOString().slice(0, 10));
+  const anchorDate = getReasonableDate(
+    state.services[serviceId].date,
+    pdfStartDateInput.value,
+    normalizeDate(new Date().toISOString().slice(0, 10))
+  );
   const startDate = addDays(anchorDate, -182);
   const firstMatch = findNextWeekday(startDate, targetDay);
   const options = [];
@@ -2417,18 +2471,14 @@ function getServiceDateOptions(serviceId) {
   return options;
 }
 
-function populateDateSelect(select, options, selectedValue, serviceId) {
+function populateDateInput(input, dataList, options, selectedValue, serviceId) {
   const placeholder = serviceId === "saturday" ? "Select Saturday" : "Select Sunday";
-  select.innerHTML = `<option value="">${placeholder}</option>${options.map((date) => `<option value="${escapeHtml(date)}">${escapeHtml(formatValue("date", date))}</option>`).join("")}`;
-
-  if (selectedValue && !options.includes(selectedValue)) {
-    const fallback = document.createElement("option");
-    fallback.value = selectedValue;
-    fallback.textContent = formatValue("date", selectedValue);
-    select.appendChild(fallback);
-  }
-
-  select.value = selectedValue ?? "";
+  const listId = `${serviceId}-service-date-list`;
+  input.placeholder = placeholder;
+  input.setAttribute("list", listId);
+  dataList.id = listId;
+  dataList.innerHTML = options.map((date) => `<option value="${escapeHtml(date)}" label="${escapeHtml(formatValue("date", date))}"></option>`).join("");
+  input.value = selectedValue ?? "";
 }
 
 function bindSimpleSelect(section, service, key, selector, options, placeholder) {
@@ -4029,31 +4079,31 @@ function isSameWeek(leftDate, rightDate) {
 }
 
 function startOfWeek(dateString) {
-  const date = new Date(`${normalizeDate(dateString)}T00:00:00`);
+  const date = parseLocalDate(dateString);
   const day = date.getDay();
   const diff = day === 0 ? -6 : 1 - day;
   date.setDate(date.getDate() + diff);
-  return normalizeDate(date.toISOString().slice(0, 10));
+  return formatLocalDate(date);
 }
 
 function addDays(dateString, days) {
-  const date = new Date(`${normalizeDate(dateString)}T00:00:00`);
+  const date = parseLocalDate(dateString);
   date.setDate(date.getDate() + days);
-  return normalizeDate(date.toISOString().slice(0, 10));
+  return formatLocalDate(date);
 }
 
 function findNextWeekday(dateString, targetDay) {
-  const date = new Date(`${normalizeDate(dateString)}T00:00:00`);
+  const date = parseLocalDate(dateString);
   while (date.getDay() !== targetDay) {
     date.setDate(date.getDate() + 1);
   }
-  return normalizeDate(date.toISOString().slice(0, 10));
+  return formatLocalDate(date);
 }
 
 function addMonths(dateString, months) {
-  const date = new Date(`${normalizeDate(dateString)}T00:00:00`);
+  const date = parseLocalDate(dateString);
   date.setMonth(date.getMonth() + months);
-  return normalizeDate(date.toISOString().slice(0, 10));
+  return formatLocalDate(date);
 }
 
 function normalizeDate(value) {
@@ -4107,7 +4157,7 @@ function getEarliestKnownDate() {
   const dates = [
     ...history.map((entry) => normalizeDate(entry.date)),
     ...Object.values(state.services).map((service) => normalizeDate(service.date))
-  ].filter(Boolean).sort((left, right) => left.localeCompare(right));
+  ].filter(isReasonableDate).sort((left, right) => left.localeCompare(right));
 
   return dates[0] ?? "";
 }
@@ -4122,7 +4172,7 @@ function formatValue(key, value) {
   }
 
   if (key === "date") {
-    return new Date(value).toLocaleDateString(undefined, {
+    return parseLocalDate(value).toLocaleDateString(undefined, {
       weekday: "short",
       year: "numeric",
       month: "short",
@@ -4135,6 +4185,32 @@ function formatValue(key, value) {
 
 function normalizePersonName(value) {
   return String(value ?? "").replace(/\s*\(DA\)\s*$/i, "").trim().toLowerCase();
+}
+
+function parseLocalDate(value) {
+  const normalized = normalizeDate(value);
+  const [year, month, day] = normalized.split("-").map(Number);
+  return new Date(year, (month || 1) - 1, day || 1);
+}
+
+function isReasonableDate(value) {
+  const normalized = normalizeDate(value);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
+    return false;
+  }
+  const year = Number(normalized.slice(0, 4));
+  return year >= 2020 && year <= 2100;
+}
+
+function getReasonableDate(...values) {
+  return values.map((value) => normalizeDate(value)).find(isReasonableDate) || normalizeDate(new Date().toISOString().slice(0, 10));
+}
+
+function formatLocalDate(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 function isDaName(value) {

@@ -97,6 +97,7 @@
       <button class="nav-btn" data-section="adonai" type="button">Adonai</button>
       <button class="nav-btn" data-section="hamakom" type="button">Hamakom</button>
       <button class="nav-btn" data-section="agape" type="button">Agape</button>
+      <button class="nav-btn" data-section="dance" type="button">Dance</button>
       <button class="nav-btn" data-section="photos" type="button">Photos</button>
       <button class="nav-btn" data-section="organizer" type="button">PAW Schedule</button>
       <button class="nav-btn" data-section="seats" type="button">Seats</button>
@@ -372,6 +373,7 @@
                 <option value="adonai">Adonai</option>
                 <option value="hamakom">Hamakom</option>
                 <option value="agape">Agape</option>
+                <option value="dance">Dance</option>
               </select>
             </label>
             <label class="auth-field">
@@ -405,6 +407,7 @@
                 <option value="adonai">Adonai</option>
                 <option value="hamakom">Hamakom</option>
                 <option value="agape">Agape</option>
+                <option value="dance">Dance</option>
               </select>
               <input id="photo-grant-user" list="photo-grant-user-list" type="text" placeholder="Search user">
               <datalist id="photo-grant-user-list"></datalist>
@@ -421,6 +424,7 @@
                 <option value="adonai">Adonai</option>
                 <option value="hamakom">Hamakom</option>
                 <option value="agape">Agape</option>
+                <option value="dance">Dance</option>
               </select>
             </label>
             <label class="auth-field">
@@ -569,6 +573,48 @@
         </article>
       </section>
 
+      <section id="section-dance" class="page-section app-hidden">
+        <article class="shell-card home-carousel-card">
+          <div class="home-title-row">
+            <h2>Dance Highlights</h2>
+          </div>
+          <div class="carousel-shell">
+            <button id="dance-carousel-prev" class="carousel-arrow" type="button" aria-label="Previous Dance photo">&#8249;</button>
+            <div class="carousel-stage">
+              <div id="dance-carousel-slide" class="carousel-slide"></div>
+              <div id="dance-carousel-dots" class="carousel-dots"></div>
+            </div>
+            <button id="dance-carousel-next" class="carousel-arrow" type="button" aria-label="Next Dance photo">&#8250;</button>
+          </div>
+        </article>
+
+        <article class="shell-card announcements-card">
+          <div class="home-title-row">
+            <h2>ANNOUNCEMENTS</h2>
+          </div>
+          <div id="dance-announcements-posts" class="announcement-posts"></div>
+          <textarea id="dance-announcements-input" class="announcements-input" placeholder="Write a post for Dance"></textarea>
+          <div class="announcement-composer-actions">
+            <button id="dance-announcements-submit" class="secondary-btn" type="button">Post Announcement</button>
+            <p id="dance-announcements-message" class="auth-message announcement-message"></p>
+          </div>
+          <div id="dance-announcements-grant-panel" class="announcement-grant-panel app-hidden">
+            <div class="section-heading">
+              <div>
+                <p class="mini-label">Grant 1 Post</p>
+                <h2>Dance Board</h2>
+              </div>
+            </div>
+            <div class="inline-form compact-form">
+              <input id="dance-announcements-grant-user" list="dance-announcements-grant-user-list" type="text" placeholder="Search user">
+              <datalist id="dance-announcements-grant-user-list"></datalist>
+              <button id="dance-announcements-grant-button" class="ghost-btn" type="button">Grant 1 Post</button>
+            </div>
+            <div id="dance-announcements-grants" class="grant-list"></div>
+          </div>
+        </article>
+      </section>
+
       <section id="section-about" class="page-section app-hidden">
         <article class="shell-card">
           <div class="section-heading">
@@ -659,7 +705,8 @@
             </div>
           </div>
           <form id="person-schedule-form" class="inline-form compact-form">
-            <select id="person-schedule-name" aria-label="Person schedule lookup"></select>
+            <input id="person-schedule-name" list="person-schedule-name-list" type="text" aria-label="Person schedule lookup" placeholder="Type or pick a person">
+            <datalist id="person-schedule-name-list"></datalist>
             <label class="year-picker">
               <span>From Date</span>
               <input id="person-schedule-start" type="date">
@@ -741,7 +788,8 @@
           <tbody>
             <tr>
               <td>
-                <select class="service-date"></select>
+                <input class="service-date" type="text" placeholder="YYYY-MM-DD">
+                <datalist class="service-date-list"></datalist>
               </td>
               <td>
                 <div class="role-cell">
