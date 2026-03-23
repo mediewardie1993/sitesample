@@ -3299,7 +3299,7 @@ function loadAuthState() {
         .filter((user) => {
           const id = String(user?.id ?? "");
           const usernames = Array.isArray(user?.usernames) ? user.usernames : [user?.username].filter(Boolean);
-          const removableSeedUsernames = ["admin", "medwardhead", "medwardadmin", "medwardmember1", "medwardmember2", "medwardvisitor"];
+          const removableSeedUsernames = ["admin", "medward", "medwardhead", "medwardadmin", "medwardmember1", "medwardmember2", "medwardvisitor"];
           return !user?.isTemporary
             && !id.startsWith("temp-")
             && !user?.isTemporary
