@@ -352,6 +352,7 @@ const fixedPhotoFile = document.querySelector("#fixed-photo-file");
 const fixedPhotoButton = document.querySelector("#fixed-photo-button");
 const fixedPhotoMessage = document.querySelector("#fixed-photo-message");
 const approvedAccounts = document.querySelector("#approved-accounts");
+const recentMembers = document.querySelector("#recent-members");
 const ministryApprovals = document.querySelector("#ministry-approvals");
 const usernameApprovals = document.querySelector("#username-approvals");
 const disciplinaryActions = document.querySelector("#disciplinary-actions");
@@ -1406,6 +1407,10 @@ function renderProfileSearchResults() {
   }
 
   const matches = authState.users.filter((user) => {
+    if (user.isCreator) {
+      return false;
+    }
+
     const haystack = `${user.name || ""} ${user.username || ""}`.toLowerCase();
     return haystack.includes(lastProfileSearchTerm.toLowerCase());
   });
@@ -1416,14 +1421,21 @@ function renderProfileSearchResults() {
   }
 
   matches.forEach((user) => {
+    const contactOnly = ["headAdmin", "admin"].includes(user.role);
     const card = document.createElement("article");
     card.className = "person-schedule-card";
     card.innerHTML = `
       <strong>${escapeHtml(user.name || user.username)}</strong>
       <div class="person-schedule-meta">@${escapeHtml(user.username || "")}</div>
-      <div>${escapeHtml((user.profile?.gender || "-"))}</div>
-      <div>${escapeHtml(user.profile?.occupation || "No occupation yet")}</div>
-      <div class="profile-search-ministries">${renderSearchProfileMinistries(user)}</div>
+      ${contactOnly
+        ? `
+          <div>Contact Number: ${escapeHtml(user.profile?.contactNumber || "-")}</div>
+        `
+        : `
+          <div>${escapeHtml((user.profile?.gender || "-"))}</div>
+          <div>${escapeHtml(user.profile?.occupation || "No occupation yet")}</div>
+          <div class="profile-search-ministries">${renderSearchProfileMinistries(user)}</div>
+        `}
     `;
     profileSearchResults.appendChild(card);
   });
@@ -2051,6 +2063,7 @@ function renderPhotoList(container, list, emptyLabel) {
 
 function renderAdmin() {
   if (!(adminMode && hasMinistryApprovalAccess())) {
+    recentMembers.innerHTML = `<div class="empty-card">Admin access required.</div>`;
     approvedAccounts.innerHTML = `<div class="empty-card">Admin access required.</div>`;
     ministryApprovals.innerHTML = `<div class="empty-card">Admin or ministry leadership access required.</div>`;
     usernameApprovals.innerHTML = `<div class="empty-card">Creator, Head Admin, or Admin access required.</div>`;
@@ -2059,18 +2072,44 @@ function renderAdmin() {
   }
 
   const fullAdmin = hasAdminAccess();
+  recentMembers.innerHTML = "";
   approvedAccounts.innerHTML = "";
 
   if (!fullAdmin) {
+    recentMembers.innerHTML = `<div class="empty-card">Full admin access is needed for the members list.</div>`;
     approvedAccounts.innerHTML = `<div class="empty-card">Full admin access is needed for role management.</div>`;
   }
 
   if (fullAdmin) {
     syncAdminUsersFromSupabase();
-    authState.users
+    const manageableAccounts = authState.users
       .filter((account) => canViewManagedAccount(account))
-      .sort(sortManagedAccountsByNewest)
-      .forEach((account) => {
+      .sort(sortManagedAccountsByNewest);
+
+    const newestAccounts = manageableAccounts.slice(0, 8);
+    if (!newestAccounts.length) {
+      recentMembers.innerHTML = `<div class="empty-card">No new members yet.</div>`;
+    } else {
+      newestAccounts.forEach((account) => {
+        recentMembers.appendChild(buildAdminMemberItem(account));
+      });
+    }
+
+    if (!manageableAccounts.length) {
+      approvedAccounts.innerHTML = `<div class="empty-card">No members available to manage yet.</div>`;
+    } else {
+      manageableAccounts.forEach((account) => {
+        approvedAccounts.appendChild(buildAdminMemberItem(account));
+      });
+    }
+  }
+
+  renderMinistryApprovals();
+  renderUsernameApprovals(fullAdmin);
+  renderDisciplinaryActions(fullAdmin);
+}
+
+function buildAdminMemberItem(account) {
       const lockedPrivilegedAccount = isPrivilegedRole(account.role) && !isCreator();
       const allowedRoles = getAssignableAccountRoles(account);
       const item = document.createElement("article");
@@ -2115,13 +2154,7 @@ function renderAdmin() {
         removeButton.addEventListener("click", () => removeAccount(account.id));
       }
 
-      approvedAccounts.appendChild(item);
-      });
-  }
-
-  renderMinistryApprovals();
-  renderUsernameApprovals(fullAdmin);
-  renderDisciplinaryActions(fullAdmin);
+      return item;
 }
 
 function renderMinistryApprovals() {
