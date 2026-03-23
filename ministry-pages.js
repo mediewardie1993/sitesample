@@ -1,28 +1,28 @@
-const organizerSection = document.querySelector("#section-organizer");
-const appShell = document.querySelector(".app-shell");
+const ministryOrganizerSection = document.querySelector("#section-organizer");
+const ministryAppShell = document.querySelector("#app-shell");
 
 function detachOrganizerSection() {
-  if (!organizerSection || !appShell) {
+  if (!ministryOrganizerSection || !ministryAppShell) {
     return;
   }
 
-  if (organizerSection.parentElement !== appShell) {
-    appShell.appendChild(organizerSection);
+  if (ministryOrganizerSection.parentElement !== ministryAppShell) {
+    ministryAppShell.appendChild(ministryOrganizerSection);
   }
 
-  organizerSection.classList.add("app-hidden");
+  ministryOrganizerSection.classList.add("app-hidden");
 }
 
 function attachOrganizerSectionToMinistryDetail() {
-  if (!organizerSection || !ministryDetailExtra) {
+  if (!ministryOrganizerSection || !ministryDetailExtra) {
     return;
   }
 
-  if (organizerSection.parentElement !== ministryDetailExtra) {
-    ministryDetailExtra.appendChild(organizerSection);
+  if (ministryOrganizerSection.parentElement !== ministryDetailExtra) {
+    ministryDetailExtra.appendChild(ministryOrganizerSection);
   }
 
-  organizerSection.classList.remove("app-hidden");
+  ministryOrganizerSection.classList.remove("app-hidden");
 }
 
 function getAnnouncementBoardConfig(sectionKey) {
