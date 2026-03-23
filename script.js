@@ -2112,7 +2112,7 @@ function renderAdmin() {
   approvedAccounts.innerHTML = "";
 
   if (!fullAdmin) {
-    recentMembers.innerHTML = `<div class="empty-card">Full admin access is needed for the members list.</div>`;
+    recentMembers.innerHTML = `<div class="empty-card">Ministry leaders use this page for ministry approvals.</div>`;
     approvedAccounts.innerHTML = `<div class="empty-card">Full admin access is needed for role management.</div>`;
   }
 
@@ -4532,11 +4532,7 @@ function canApproveMinistryRequest(request) {
     return true;
   }
 
-  return (Array.isArray(currentUser.titles) ? currentUser.titles : []).some((title) =>
-    title.scope === "ministry"
-    && title.ministry === request.ministry
-    && ["ministryHead", "ministryAssistant"].includes(title.role)
-  );
+  return hasMinistryLeadershipApprovalFor(request.ministry);
 }
 
 function formatProfileMinistriesSummary(user) {
@@ -4553,6 +4549,18 @@ function formatProfileMinistriesSummary(user) {
 
 function hasMinistryLeadership(user, ministry) {
   return (Array.isArray(user?.titles) ? user.titles : []).some((title) =>
+    title.scope === "ministry"
+    && title.ministry === ministry
+    && ["ministryHead", "ministryAssistant"].includes(title.role)
+  );
+}
+
+function hasMinistryLeadershipApprovalFor(ministry) {
+  if (!currentUser || !adminMode || !ministry) {
+    return false;
+  }
+
+  return (Array.isArray(currentUser.titles) ? currentUser.titles : []).some((title) =>
     title.scope === "ministry"
     && title.ministry === ministry
     && ["ministryHead", "ministryAssistant"].includes(title.role)
