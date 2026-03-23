@@ -163,6 +163,19 @@
               <h2>Seat Layout Preview</h2>
             </div>
           </div>
+          <div class="seat-event-toolbar">
+            <label class="auth-field seat-event-picker">
+              <span>Seat Event</span>
+              <select id="seat-event-select"></select>
+            </label>
+            <div id="seat-event-meta" class="seat-event-meta"></div>
+          </div>
+          <form id="seat-event-proposal-form" class="inline-form compact-form app-hidden">
+            <input id="seat-event-title" type="text" placeholder="Event title">
+            <input id="seat-event-date" type="date">
+            <button id="seat-event-proposal-submit" class="secondary-btn" type="submit">Send Proposal</button>
+          </form>
+          <p id="seat-event-proposal-message" class="auth-message app-hidden"></p>
           <p id="seat-layout-note" class="mode-note"></p>
           <div id="seat-admin-actions" class="seat-request-actions app-hidden">
             <button id="approve-all-seats-btn" class="secondary-btn" type="button">Approve All Seats</button>
@@ -835,6 +848,15 @@
             </div>
           </div>
           <div id="disciplinary-actions" class="admin-list"></div>
+        </article>
+        <article class="shell-card">
+          <div class="section-heading">
+            <div>
+              <p class="mini-label">Seat Event Requests</p>
+              <h2>Approve seat event proposals</h2>
+            </div>
+          </div>
+          <div id="seat-event-approvals" class="admin-list"></div>
         </article>
       </section>
     </main>

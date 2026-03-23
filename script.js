@@ -8,6 +8,8 @@ const SESSION_KEY = "jccm-site-session-v1";
 const SESSION_TEMP_KEY = "jccm-site-session-temp-v1";
 const ANNOUNCEMENTS_KEY = "jccm-announcements-v3";
 const SEAT_LAYOUT_KEY = "jccm-seat-layout-v1";
+const SEAT_EVENTS_KEY = "jccm-seat-events-v1";
+const ACTIVE_SEAT_EVENT_KEY = "jccm-active-seat-event-v1";
 const ACTIVE_SECTION_KEY = "jccm-active-section-v1";
 const SEAT_RESET_KEY = "jccm-seat-layout-last-reset-v1";
 const SUPABASE_URL = "https://gxgdetvlehwlxsenpijn.supabase.co";
@@ -256,6 +258,12 @@ const navButtons = [...document.querySelectorAll(".nav-btn")];
 const adminNavButton = document.querySelector("#admin-nav-btn");
 const reserveSeatButton = document.querySelector("#reserve-seat-btn");
 const seatLayoutNote = document.querySelector("#seat-layout-note");
+const seatEventSelect = document.querySelector("#seat-event-select");
+const seatEventMeta = document.querySelector("#seat-event-meta");
+const seatEventProposalForm = document.querySelector("#seat-event-proposal-form");
+const seatEventTitle = document.querySelector("#seat-event-title");
+const seatEventDate = document.querySelector("#seat-event-date");
+const seatEventProposalMessage = document.querySelector("#seat-event-proposal-message");
 const seatAdminActions = document.querySelector("#seat-admin-actions");
 const approveAllSeatsButton = document.querySelector("#approve-all-seats-btn");
 const clearAllSeatsButton = document.querySelector("#clear-all-seats-btn");
@@ -370,6 +378,7 @@ const recentMembers = document.querySelector("#recent-members");
 const ministryApprovals = document.querySelector("#ministry-approvals");
 const usernameApprovals = document.querySelector("#username-approvals");
 const disciplinaryActions = document.querySelector("#disciplinary-actions");
+const seatEventApprovals = document.querySelector("#seat-event-approvals");
 const serviceSections = document.querySelector("#service-sections");
 const sectionTemplate = document.querySelector("#service-section-template");
 const registryForm = document.querySelector("#registry-form");
@@ -408,7 +417,10 @@ let activeSection = restoreActiveSection();
 let adminMode = false;
 let carouselIndexes = { sunday: 0, adonai: 0, hamakom: 0, agape: 0, dance: 0, kids: 0 };
 let announcements = loadAnnouncements();
-let seatLayoutState = loadSeatLayoutState();
+let seatEvents = loadSeatEventsState();
+let activeSeatEventId = restoreActiveSeatEventId();
+let seatLayoutsByEvent = loadSeatLayoutState();
+let seatLayoutState = {};
 let homeCarouselTimer = null;
 let homeCarouselResolved = false;
 let carouselScrollPauseTimer = null;
@@ -500,12 +512,15 @@ const announcementRefs = {
 initializeApp();
 
 function initializeApp() {
+  initializeSeatEvents();
   showLoginButton.addEventListener("click", () => setAuthMode("login"));
   showRegisterButton.addEventListener("click", () => setAuthMode("register"));
   loginForm.addEventListener("submit", handleLogin);
   registerForm.addEventListener("submit", handleRegister);
   registerContactNumber.addEventListener("input", enforcePhilippineContactPrefix);
   reserveSeatButton.addEventListener("click", openSeatsPage);
+  seatEventSelect?.addEventListener("change", handleSeatEventChange);
+  seatEventProposalForm?.addEventListener("submit", handleSeatEventProposalSubmit);
   approveAllSeatsButton.addEventListener("click", approveAllSeatRequests);
   clearAllSeatsButton.addEventListener("click", clearAllSeats);
   confirmSeatRequestButton.addEventListener("click", confirmSeatRequests);
@@ -566,7 +581,6 @@ function initializeApp() {
       handleLogoError();
     }
   }
-  maybeResetSeatLayout();
   buildSeatLayout();
   renderApp();
 }
@@ -575,6 +589,70 @@ function openSeatsPage() {
   activeSection = "seats";
   renderSections();
   startCarouselAutoplay();
+}
+
+function handleSeatEventChange() {
+  activeSeatEventId = seatEventSelect?.value || "";
+  seatLayoutState = { ...(seatLayoutsByEvent?.[activeSeatEventId] || {}) };
+  pendingSeatSelections = [];
+  if (seatRequestMessage) {
+    seatRequestMessage.textContent = "";
+  }
+  persistActiveSeatEvent();
+  renderSeatLayout();
+}
+
+function handleSeatEventProposalSubmit(event) {
+  event.preventDefault();
+
+  if (!canProposeSeatEvents()) {
+    return;
+  }
+
+  const title = seatEventTitle?.value.trim() || "";
+  const date = seatEventDate?.value || "";
+
+  if (!title || !date) {
+    if (seatEventProposalMessage) {
+      seatEventProposalMessage.textContent = "Enter an event title and date first.";
+    }
+    return;
+  }
+
+  const duplicate = (seatEvents ?? []).some((entry) =>
+    entry.date === date && entry.title.trim().toLowerCase() === title.toLowerCase()
+  );
+  if (duplicate) {
+    if (seatEventProposalMessage) {
+      seatEventProposalMessage.textContent = "That seat event already exists or is already pending.";
+    }
+    return;
+  }
+
+  const ministryTitle = (Array.isArray(currentUser?.titles) ? currentUser.titles : []).find((titleEntry) =>
+    titleEntry.scope === "ministry" && titleEntry.role === "ministryHead"
+  );
+
+  seatEvents = sortSeatEvents([
+    ...seatEvents,
+    createSeatEventRecord({
+      title,
+      date,
+      ministry: ministryTitle?.ministry || "",
+      status: "pending",
+      proposedById: currentUser?.id || "",
+      proposedByName: currentUser?.name || currentUser?.username || ""
+    })
+  ]);
+  persistSeatEventsState();
+  seatEventProposalForm.reset();
+  if (seatEventProposalMessage) {
+    seatEventProposalMessage.textContent = "Seat event proposal sent for admin approval.";
+  }
+  renderSeatLayout();
+  if (adminMode && activeSection === "admin") {
+    renderAdmin();
+  }
 }
 
 function buildSeatLayout() {
@@ -616,29 +694,48 @@ function renderSeatLayout() {
     return;
   }
 
-  maybeResetSeatLayout();
+  initializeSeatEvents();
   const canManage = canManageSeats();
+  const canPropose = canProposeSeatEvents();
   const canRequest = Boolean(currentUser) && !canManage;
+  const activeEvent = getActiveSeatEvent();
+  const approvedEvents = getApprovedSeatEvents();
+  const hasApprovedEvent = Boolean(activeEvent);
+  if (seatEventSelect) {
+    seatEventSelect.innerHTML = approvedEvents.map((event) =>
+      `<option value="${escapeHtml(event.id)}" ${event.id === activeSeatEventId ? "selected" : ""}>${escapeHtml(getSeatEventLabel(event))}</option>`
+    ).join("");
+    seatEventSelect.disabled = approvedEvents.length <= 1;
+  }
+  if (seatEventMeta) {
+    seatEventMeta.textContent = activeEvent
+      ? `${activeEvent.ministry ? `${activeEvent.ministry} event` : "Approved event"}`
+      : "No approved seat events yet.";
+  }
+  seatEventProposalForm?.classList.toggle("app-hidden", !canPropose);
+  seatEventProposalMessage?.classList.toggle("app-hidden", !canPropose);
   if (seatLayoutNote) {
-    seatLayoutNote.textContent = canManage
-      ? "You can approve requests and update seat status on this page."
-      : "You can select available seats here, then confirm your request. Only Ushers Head, Ushers Assistant Head, and upper admins can approve seats.";
+    seatLayoutNote.textContent = !hasApprovedEvent
+      ? "No approved seat event is available yet."
+      : canManage
+        ? "You can approve requests and update seat status for this event."
+        : "You can select available seats for this event, then confirm your request. Only Ushers Head, Ushers Assistant Head, and upper admins can approve seats.";
   }
   seatAdminActions.classList.toggle("app-hidden", !canManage);
   seatAdminMessage.classList.toggle("app-hidden", !canManage);
-  seatRequestActions.classList.toggle("app-hidden", !canRequest);
-  seatRequestMessage.classList.toggle("app-hidden", !canRequest);
+  seatRequestActions.classList.toggle("app-hidden", !canRequest || !hasApprovedEvent);
+  seatRequestMessage.classList.toggle("app-hidden", !canRequest || !hasApprovedEvent);
   const requestedSeats = getSeatIdsByStatus("requested");
   approveAllSeatsButton.disabled = requestedSeats.length === 0;
   clearAllSeatsButton.disabled = Object.keys(seatLayoutState).length === 0;
-  confirmSeatRequestButton.disabled = pendingSeatSelections.length === 0;
+  confirmSeatRequestButton.disabled = pendingSeatSelections.length === 0 || !hasApprovedEvent;
   clearSeatRequestButton.disabled = pendingSeatSelections.length === 0;
   if (canManage) {
     seatAdminMessage.textContent = requestedSeats.length
       ? `${requestedSeats.length} seat request${requestedSeats.length === 1 ? "" : "s"} waiting for approval.`
       : "No seat requests waiting right now.";
   }
-  if (canRequest && !seatRequestMessage.textContent) {
+  if (canRequest && hasApprovedEvent && !seatRequestMessage.textContent) {
     seatRequestMessage.textContent = pendingSeatSelections.length
       ? `${pendingSeatSelections.length} seat${pendingSeatSelections.length === 1 ? "" : "s"} selected. Confirm when ready.`
       : "";
@@ -713,7 +810,7 @@ function cycleSeatState(seatId) {
 }
 
 function canRequestSeat(seatId) {
-  if (!currentUser) {
+  if (!currentUser || !getActiveSeatEvent()) {
     return false;
   }
 
@@ -797,9 +894,56 @@ function clearAllSeats() {
   pendingSeatSelections = [];
   seatRequestMessage.textContent = "";
   persistSeatLayoutState();
-  persistSeatResetTimestamp(Date.now());
   seatAdminMessage.textContent = "All seats have been cleared.";
   renderSeatLayout();
+}
+
+function approveSeatEventProposal(eventId) {
+  if (!hasAdminAccess() || !adminMode) {
+    return;
+  }
+
+  seatEvents = sortSeatEvents((seatEvents ?? []).map((event) =>
+    event.id === eventId
+      ? {
+        ...event,
+        status: "approved",
+        approvedByName: currentUser?.name || currentUser?.username || ""
+      }
+      : event
+  ));
+
+  if (!activeSeatEventId) {
+    activeSeatEventId = eventId;
+    seatLayoutState = { ...(seatLayoutsByEvent?.[activeSeatEventId] || {}) };
+  }
+
+  persistSeatEventsState();
+  persistActiveSeatEvent();
+  renderSeatLayout();
+  renderAdmin();
+}
+
+function rejectSeatEventProposal(eventId) {
+  if (!hasAdminAccess() || !adminMode) {
+    return;
+  }
+
+  seatEvents = (seatEvents ?? []).filter((event) => event.id !== eventId);
+  if (seatLayoutsByEvent?.[eventId]) {
+    delete seatLayoutsByEvent[eventId];
+  }
+
+  if (activeSeatEventId === eventId) {
+    activeSeatEventId = getApprovedSeatEvents()[0]?.id || "";
+    seatLayoutState = { ...(seatLayoutsByEvent?.[activeSeatEventId] || {}) };
+  }
+
+  persistSeatEventsState();
+  persistSeatLayoutState();
+  persistActiveSeatEvent();
+  renderSeatLayout();
+  renderAdmin();
 }
 
 function normalizeSeatEntry(value) {
@@ -1268,8 +1412,10 @@ function renderApp() {
     currentUserName.textContent = currentUser.name || currentUser.username;
   }
   if (currentUserRole) {
-    const roleSummary = formatAccountSummary(currentUser) || roleLabels[currentUser.role] || "Member";
-    currentUserRole.textContent = `${roleSummary}${adminMode ? " - Admin Mode" : " - View Mode"}`;
+    const roleSummary = getVisibleTopRoleSummary(currentUser);
+    currentUserRole.textContent = roleSummary
+      ? `${roleSummary}${adminMode ? " - Admin Mode" : " - View Mode"}`
+      : `${adminMode ? "Admin Mode" : "View Mode"}`;
   }
   adminModeButton.classList.toggle("app-hidden", !canEnterAdminMode());
   adminModeButton.textContent = adminMode ? "Exit Admin" : "Admin";
@@ -2138,6 +2284,7 @@ function renderAdmin() {
     ministryApprovals.innerHTML = `<div class="empty-card">Admin or ministry leadership access required.</div>`;
     usernameApprovals.innerHTML = `<div class="empty-card">Creator, Head Admin, or Admin access required.</div>`;
     disciplinaryActions.innerHTML = `<div class="empty-card">Head Admin or Admin access required.</div>`;
+    seatEventApprovals.innerHTML = `<div class="empty-card">Creator, Head Admin, or Admin access required.</div>`;
     return;
   }
 
@@ -2162,7 +2309,7 @@ function renderAdmin() {
       recentMembers.innerHTML = `<div class="empty-card">No new members yet.</div>`;
     } else {
       newestAccounts.forEach((account) => {
-        recentMembers.appendChild(buildAdminMemberItem(account));
+        recentMembers.appendChild(buildAdminMemberPreviewItem(account));
       });
     }
 
@@ -2170,7 +2317,7 @@ function renderAdmin() {
       approvedAccounts.innerHTML = `<div class="empty-card">No members available to manage yet.</div>`;
     } else {
       manageableAccounts.forEach((account) => {
-        approvedAccounts.appendChild(buildAdminMemberItem(account));
+        approvedAccounts.appendChild(buildAdminMemberPreviewItem(account));
       });
     }
   }
@@ -2178,6 +2325,7 @@ function renderAdmin() {
   renderMinistryApprovals();
   renderUsernameApprovals(fullAdmin);
   renderDisciplinaryActions(fullAdmin);
+  renderSeatEventApprovals(fullAdmin);
 }
 
 function buildAdminMemberItem(account) {
@@ -2226,6 +2374,32 @@ function buildAdminMemberItem(account) {
       }
 
       return item;
+}
+
+function buildAdminMemberPreviewItem(account) {
+  const item = document.createElement("article");
+  const ministrySummary = formatProfileMinistriesSummary(account) || "No ministries yet";
+  const pendingSummary = getPendingMinistryRequestsForUser(account.id)
+    .map((request) => `${registrationRoleLabels[request.role] ?? request.role} - ${request.ministry}`)
+    .join(", ");
+  const topRoleSummary = getVisibleTopRoleSummary(account);
+
+  item.className = "admin-item";
+  item.innerHTML = `
+    <div class="admin-item-head">
+      <div>
+        <strong>${escapeHtml(account.name)}</strong>
+        <p>@${escapeHtml(account.username)}</p>
+      </div>
+      ${topRoleSummary ? `<span class="status-pill">${escapeHtml(topRoleSummary)}</span>` : ""}
+    </div>
+    <div class="admin-readonly-meta">
+      <div><strong>Ministries:</strong> ${escapeHtml(ministrySummary)}</div>
+      ${pendingSummary ? `<div><strong>Pending applications:</strong> ${escapeHtml(pendingSummary)}</div>` : ""}
+    </div>
+  `;
+
+  return item;
 }
 
 function renderMinistryApprovals() {
@@ -2348,6 +2522,42 @@ function renderDisciplinaryActions(fullAdmin = hasAdminAccess()) {
 
       disciplinaryActions.appendChild(item);
     });
+}
+
+function renderSeatEventApprovals(fullAdmin = hasAdminAccess()) {
+  seatEventApprovals.innerHTML = "";
+
+  if (!fullAdmin) {
+    seatEventApprovals.innerHTML = `<div class="empty-card">Creator, Head Admin, or Admin access required.</div>`;
+    return;
+  }
+
+  const proposals = getPendingSeatEventProposals();
+  if (!proposals.length) {
+    seatEventApprovals.innerHTML = `<div class="empty-card">No seat event proposals waiting for approval.</div>`;
+    return;
+  }
+
+  proposals.forEach((proposal) => {
+    const item = document.createElement("article");
+    item.className = "admin-item";
+    item.innerHTML = `
+      <div class="admin-item-head">
+        <div>
+          <strong>${escapeHtml(proposal.title)}</strong>
+          <p>${escapeHtml(formatValue("date", proposal.date))}${proposal.ministry ? ` • ${escapeHtml(proposal.ministry)}` : ""}${proposal.proposedByName ? ` • proposed by ${escapeHtml(proposal.proposedByName)}` : ""}</p>
+        </div>
+        <span class="status-pill">Pending</span>
+      </div>
+      <div class="admin-actions">
+        <button class="primary-btn approve-btn" type="button">Approve</button>
+        <button class="ghost-btn reject-btn" type="button">Reject</button>
+      </div>
+    `;
+    item.querySelector(".approve-btn").addEventListener("click", () => approveSeatEventProposal(proposal.id));
+    item.querySelector(".reject-btn").addEventListener("click", () => rejectSeatEventProposal(proposal.id));
+    seatEventApprovals.appendChild(item);
+  });
 }
 
 async function approveMinistryRequest(requestId) {
@@ -3535,6 +3745,95 @@ function loadAnnouncements() {
   }
 }
 
+function getNextSundayDateString(now = new Date()) {
+  const date = new Date(now);
+  date.setHours(0, 0, 0, 0);
+  while (date.getDay() !== 0) {
+    date.setDate(date.getDate() + 1);
+  }
+  return formatLocalDate(date);
+}
+
+function createSeatEventRecord(overrides = {}) {
+  return {
+    id: overrides.id || `seat-event-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+    title: overrides.title || "Seat Event",
+    date: overrides.date || getNextSundayDateString(),
+    ministry: overrides.ministry || "",
+    status: overrides.status || "pending",
+    proposedById: overrides.proposedById || "",
+    proposedByName: overrides.proposedByName || "",
+    approvedByName: overrides.approvedByName || "",
+    createdAt: overrides.createdAt || new Date().toISOString(),
+    isDefault: Boolean(overrides.isDefault)
+  };
+}
+
+function createDefaultSundaySeatEvent(dateString = getNextSundayDateString()) {
+  return createSeatEventRecord({
+    id: `seat-sunday-${dateString}`,
+    title: "Sunday Service",
+    date: dateString,
+    ministry: "Ushers",
+    status: "approved",
+    proposedById: "system",
+    proposedByName: "System",
+    approvedByName: "System",
+    isDefault: true
+  });
+}
+
+function normalizeSeatEventRecord(event) {
+  if (!event || typeof event !== "object") {
+    return null;
+  }
+
+  return createSeatEventRecord({
+    ...event,
+    id: event.id || `seat-event-${event.date || Date.now()}`,
+    title: event.title || event.name || "Seat Event",
+    date: String(event.date || "").slice(0, 10) || getNextSundayDateString(),
+    ministry: event.ministry || "",
+    status: event.status === "approved" ? "approved" : "pending",
+    proposedById: event.proposedById || event.proposed_by_id || "",
+    proposedByName: event.proposedByName || event.proposed_by_name || "",
+    approvedByName: event.approvedByName || event.approved_by_name || "",
+    createdAt: event.createdAt || event.created_at || new Date().toISOString(),
+    isDefault: Boolean(event.isDefault)
+  });
+}
+
+function sortSeatEvents(events) {
+  return [...events].sort((left, right) => {
+    const dateCompare = (left.date || "").localeCompare(right.date || "");
+    if (dateCompare !== 0) {
+      return dateCompare;
+    }
+    return (left.title || "").localeCompare(right.title || "");
+  });
+}
+
+function loadSeatEventsState() {
+  const saved = window.localStorage.getItem(SEAT_EVENTS_KEY);
+  if (!saved) {
+    return [createDefaultSundaySeatEvent()];
+  }
+
+  try {
+    const parsed = JSON.parse(saved);
+    const normalized = Array.isArray(parsed)
+      ? parsed.map(normalizeSeatEventRecord).filter(Boolean)
+      : [];
+    return normalized.length ? normalized : [createDefaultSundaySeatEvent()];
+  } catch (error) {
+    return [createDefaultSundaySeatEvent()];
+  }
+}
+
+function restoreActiveSeatEventId() {
+  return window.localStorage.getItem(ACTIVE_SEAT_EVENT_KEY) || "";
+}
+
 function loadSeatLayoutState() {
   const saved = window.localStorage.getItem(SEAT_LAYOUT_KEY);
   if (!saved) {
@@ -3543,50 +3842,66 @@ function loadSeatLayoutState() {
 
   try {
     const parsed = JSON.parse(saved);
-    return parsed && typeof parsed === "object" ? parsed : {};
+    if (!parsed || typeof parsed !== "object") {
+      return {};
+    }
+
+    const values = Object.values(parsed);
+    const looksLikeLegacyLayout = values.some((value) => value && typeof value === "object" && "status" in value);
+    if (looksLikeLegacyLayout) {
+      const defaultEvent = createDefaultSundaySeatEvent();
+      if (!seatEvents.some((event) => event.id === defaultEvent.id)) {
+        seatEvents = sortSeatEvents([...seatEvents, defaultEvent]);
+      }
+      return { [defaultEvent.id]: parsed };
+    }
+
+    return parsed;
   } catch (error) {
     return {};
   }
 }
 
-function getLastSeatResetTimestamp() {
-  const raw = Number(window.localStorage.getItem(SEAT_RESET_KEY));
-  return Number.isFinite(raw) ? raw : 0;
+function getSeatEventLabel(event) {
+  return `${event.title} - ${formatValue("date", event.date)}`;
 }
 
-function persistSeatResetTimestamp(timestamp) {
-  window.localStorage.setItem(SEAT_RESET_KEY, String(timestamp));
+function getApprovedSeatEvents() {
+  return sortSeatEvents((seatEvents ?? []).filter((event) => event.status === "approved"));
 }
 
-function getLatestSeatResetBoundary(now = new Date()) {
-  const boundary = new Date(now);
-  boundary.setHours(14, 0, 0, 0);
-  const day = boundary.getDay();
-  const daysSinceSunday = day;
-  boundary.setDate(boundary.getDate() - daysSinceSunday);
-  if (now < boundary) {
-    boundary.setDate(boundary.getDate() - 7);
-  }
-  return boundary;
+function getPendingSeatEventProposals() {
+  return sortSeatEvents((seatEvents ?? []).filter((event) => event.status === "pending"));
 }
 
-function maybeResetSeatLayout() {
-  const latestBoundary = getLatestSeatResetBoundary();
-  const lastReset = getLastSeatResetTimestamp();
-  if (!latestBoundary || latestBoundary.getTime() <= 0 || lastReset >= latestBoundary.getTime()) {
-    return;
+function getActiveSeatEvent() {
+  return (seatEvents ?? []).find((event) => event.id === activeSeatEventId) || null;
+}
+
+function initializeSeatEvents() {
+  const defaultEvent = createDefaultSundaySeatEvent();
+  const hasUpcomingSundayDefault = seatEvents.some((event) =>
+    event.status === "approved" && event.date === defaultEvent.date && event.isDefault
+  );
+
+  if (!hasUpcomingSundayDefault) {
+    seatEvents = sortSeatEvents([
+      ...seatEvents.filter((event) => !(event.isDefault && event.date < defaultEvent.date)),
+      defaultEvent
+    ]);
+  } else {
+    seatEvents = sortSeatEvents(seatEvents);
   }
 
-  seatLayoutState = {};
-  pendingSeatSelections = [];
-  if (seatRequestMessage) {
-    seatRequestMessage.textContent = "";
+  const approvedEvents = getApprovedSeatEvents();
+  if (!approvedEvents.some((event) => event.id === activeSeatEventId)) {
+    activeSeatEventId = approvedEvents[0]?.id || defaultEvent.id;
   }
-  if (seatAdminMessage) {
-    seatAdminMessage.textContent = "Seat layout reset for the new week.";
-  }
+
+  seatLayoutState = { ...(seatLayoutsByEvent?.[activeSeatEventId] || {}) };
+  persistSeatEventsState();
+  persistActiveSeatEvent();
   persistSeatLayoutState();
-  persistSeatResetTimestamp(latestBoundary.getTime());
 }
 
 function restoreSession() {
@@ -3964,8 +4279,24 @@ function persistAnnouncements() {
   window.localStorage.setItem(ANNOUNCEMENTS_KEY, JSON.stringify(announcements));
 }
 
+function persistSeatEventsState() {
+  window.localStorage.setItem(SEAT_EVENTS_KEY, JSON.stringify(seatEvents));
+}
+
 function persistSeatLayoutState() {
-  window.localStorage.setItem(SEAT_LAYOUT_KEY, JSON.stringify(seatLayoutState));
+  seatLayoutsByEvent = {
+    ...(seatLayoutsByEvent || {}),
+    [activeSeatEventId]: seatLayoutState
+  };
+  window.localStorage.setItem(SEAT_LAYOUT_KEY, JSON.stringify(seatLayoutsByEvent));
+}
+
+function persistActiveSeatEvent() {
+  if (activeSeatEventId) {
+    window.localStorage.setItem(ACTIVE_SEAT_EVENT_KEY, activeSeatEventId);
+  } else {
+    window.localStorage.removeItem(ACTIVE_SEAT_EVENT_KEY);
+  }
 }
 
 function persistActiveSection() {
@@ -4350,6 +4681,20 @@ function canManageSeats() {
   return hasMinistryLeadership(currentUser, "Ushers");
 }
 
+function canProposeSeatEvents() {
+  if (!currentUser || !adminMode) {
+    return false;
+  }
+
+  if (isCreator() || ["headAdmin", "admin"].includes(currentUser.role)) {
+    return true;
+  }
+
+  return (Array.isArray(currentUser.titles) ? currentUser.titles : []).some((title) =>
+    title.scope === "ministry" && title.role === "ministryHead"
+  );
+}
+
 function canGrantPhotoUpload(sectionKey) {
   return canModeratePhotoUploads() && Boolean(sectionKey && photoSectionMeta[sectionKey]);
 }
@@ -4544,6 +4889,27 @@ function formatAccountSummary(account) {
   }
 
   return account.titles.map(formatTitleLabel).join(", ");
+}
+
+function getVisibleTopRoleSummary(account) {
+  if (!account) {
+    return "";
+  }
+
+  if (account.isCreator) {
+    return "Creator";
+  }
+
+  if (["headAdmin", "admin"].includes(account.role)) {
+    return roleLabels[account.role] ?? "";
+  }
+
+  const titles = Array.isArray(account.titles) ? account.titles : [];
+  const ministryLeadershipTitle = titles.find((title) =>
+    title.scope === "ministry" && ["ministryHead", "ministryAssistant"].includes(title.role)
+  );
+
+  return ministryLeadershipTitle ? formatTitleLabel(ministryLeadershipTitle) : "";
 }
 
 function sortManagedAccountsByNewest(left, right) {
