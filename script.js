@@ -4361,7 +4361,15 @@ function canEnterAdminMode() {
 }
 
 function canEditOrganizer() {
-  return adminMode && Boolean(currentUser) && (isCreator() || Boolean(currentUser));
+  return adminMode && Boolean(currentUser) && (
+    isCreator()
+    || ["headAdmin", "admin"].includes(currentUser.role)
+    || (Array.isArray(currentUser.titles) && currentUser.titles.some((title) =>
+      title.scope === "ministry"
+      && title.ministry === "Praise And Worship Team"
+      && ["ministryHead", "ministryAssistant"].includes(title.role)
+    ))
+  );
 }
 
 function canEditHomeContent() {
