@@ -1371,6 +1371,31 @@ function renderProfileMinistryRequests() {
   });
 }
 
+function renderProfileUsernameRequests() {
+  const requests = getPendingUsernameRequestsForUser(currentUser?.id);
+
+  if (!requests.length) {
+    profileUsernameRequests.innerHTML = `<div class="empty-card">No pending username requests.</div>`;
+    return;
+  }
+
+  profileUsernameRequests.innerHTML = "";
+  requests.forEach((request) => {
+    const card = document.createElement("article");
+    card.className = "person-schedule-card";
+    card.innerHTML = `
+      <div class="profile-request-head">
+        <strong>@${escapeHtml(request.requestedUsername)}</strong>
+        <button class="ghost-btn profile-request-remove" type="button" aria-label="Cancel username request">&times;</button>
+      </div>
+      <div class="person-schedule-meta">Requested from @${escapeHtml(request.currentUsername || "")}</div>
+      <div>Waiting for Creator, Head Admin, or Admin approval.</div>
+    `;
+    card.querySelector(".profile-request-remove").addEventListener("click", () => removeUsernameChangeRequest(request.id));
+    profileUsernameRequests.appendChild(card);
+  });
+}
+
 function renderProfileSearchResults() {
   profileSearchResults.innerHTML = "";
 
@@ -1642,6 +1667,68 @@ function handlePasswordChange(event) {
   renderApp();
 }
 
+function handleUsernameChangeRequest(event) {
+  event.preventDefault();
+
+  if (!currentUser) {
+    return;
+  }
+
+  const requestedUsername = newUsernameInput.value.trim();
+  if (!requestedUsername) {
+    usernameMessage.textContent = "Enter a new username first.";
+    return;
+  }
+
+  if (requestedUsername === currentUser.username) {
+    usernameMessage.textContent = "That is already your current username.";
+    return;
+  }
+
+  if (isUsernameTaken(requestedUsername, currentUser.id)) {
+    usernameMessage.textContent = "That username is already in use.";
+    return;
+  }
+
+  const duplicatePending = (authState.usernameRequests ?? []).some((request) =>
+    request.userId === currentUser.id
+    || request.requestedUsername === requestedUsername
+  );
+
+  if (duplicatePending) {
+    usernameMessage.textContent = "You already have a pending username request, or that username is already requested.";
+    return;
+  }
+
+  authState.usernameRequests = [
+    ...(Array.isArray(authState.usernameRequests) ? authState.usernameRequests : []),
+    {
+      id: `username-request-${Date.now()}`,
+      userId: currentUser.id,
+      name: currentUser.name || currentUser.username,
+      currentUsername: currentUser.username,
+      requestedUsername,
+      requestedAt: new Date().toISOString()
+    }
+  ];
+  persistAuth();
+  changeUsernameForm.reset();
+  usernameMessage.textContent = "Username change request sent for approval.";
+  renderApp();
+}
+
+function removeUsernameChangeRequest(requestId) {
+  if (!currentUser) {
+    return;
+  }
+
+  authState.usernameRequests = (authState.usernameRequests ?? []).filter((request) =>
+    !(request.id === requestId && request.userId === currentUser.id)
+  );
+  persistAuth();
+  renderApp();
+}
+
 function handleCreateMinistry(event) {
   event.preventDefault();
 
@@ -1903,6 +1990,7 @@ function renderAdmin() {
   if (!(adminMode && hasMinistryApprovalAccess())) {
     approvedAccounts.innerHTML = `<div class="empty-card">Admin access required.</div>`;
     ministryApprovals.innerHTML = `<div class="empty-card">Admin or ministry leadership access required.</div>`;
+    usernameApprovals.innerHTML = `<div class="empty-card">Creator, Head Admin, or Admin access required.</div>`;
     disciplinaryActions.innerHTML = `<div class="empty-card">Head Admin or Admin access required.</div>`;
     return;
   }
@@ -1967,6 +2055,7 @@ function renderAdmin() {
   }
 
   renderMinistryApprovals();
+  renderUsernameApprovals(fullAdmin);
   renderDisciplinaryActions(fullAdmin);
 }
 
@@ -1998,6 +2087,42 @@ function renderMinistryApprovals() {
     item.querySelector(".approve-btn").addEventListener("click", () => approveMinistryRequest(request.id));
     item.querySelector(".reject-btn").addEventListener("click", () => rejectMinistryRequest(request.id));
     ministryApprovals.appendChild(item);
+  });
+}
+
+function renderUsernameApprovals(fullAdmin = hasAdminAccess()) {
+  usernameApprovals.innerHTML = "";
+
+  if (!fullAdmin) {
+    usernameApprovals.innerHTML = `<div class="empty-card">Creator, Head Admin, or Admin access required.</div>`;
+    return;
+  }
+
+  const requests = getActionableUsernameRequests();
+  if (!requests.length) {
+    usernameApprovals.innerHTML = `<div class="empty-card">No username requests waiting for you.</div>`;
+    return;
+  }
+
+  requests.forEach((request) => {
+    const item = document.createElement("article");
+    item.className = "admin-item";
+    item.innerHTML = `
+      <div class="admin-item-head">
+        <div>
+          <strong>${escapeHtml(request.name || request.currentUsername)}</strong>
+          <p>@${escapeHtml(request.currentUsername || "")} requested @${escapeHtml(request.requestedUsername || "")}</p>
+        </div>
+        <span class="status-pill">Pending</span>
+      </div>
+      <div class="admin-actions">
+        <button class="primary-btn approve-btn" type="button">Approve</button>
+        <button class="ghost-btn reject-btn" type="button">Reject</button>
+      </div>
+    `;
+    item.querySelector(".approve-btn").addEventListener("click", () => approveUsernameChangeRequest(request.id));
+    item.querySelector(".reject-btn").addEventListener("click", () => rejectUsernameChangeRequest(request.id));
+    usernameApprovals.appendChild(item);
   });
 }
 
@@ -2085,6 +2210,42 @@ function rejectMinistryRequest(requestId) {
   }
 
   authState.ministryRequests = (authState.ministryRequests ?? []).filter((entry) => entry.id !== requestId);
+  persistAuth();
+  renderApp();
+}
+
+function approveUsernameChangeRequest(requestId) {
+  const request = (authState.usernameRequests ?? []).find((entry) => entry.id === requestId);
+  if (!request || !hasAdminAccess() || isUsernameTaken(request.requestedUsername, request.userId)) {
+    renderAdmin();
+    return;
+  }
+
+  authState.users = authState.users.map((user) => {
+    if (user.id !== request.userId) {
+      return user;
+    }
+
+    return normalizeUserAccount({
+      ...user,
+      username: request.requestedUsername,
+      usernames: user.isCreator
+        ? [...new Set([request.requestedUsername, "mediewardie", "toGodbetheglory"])]
+        : [request.requestedUsername]
+    });
+  });
+  authState.usernameRequests = (authState.usernameRequests ?? []).filter((entry) => entry.id !== requestId);
+  currentUser = authState.users.find((user) => user.id === currentUser?.id) ?? currentUser;
+  persistAuth();
+  renderApp();
+}
+
+function rejectUsernameChangeRequest(requestId) {
+  if (!hasAdminAccess()) {
+    return;
+  }
+
+  authState.usernameRequests = (authState.usernameRequests ?? []).filter((entry) => entry.id !== requestId);
   persistAuth();
   renderApp();
 }
@@ -2975,6 +3136,7 @@ function loadAuthState() {
       users: ensureSeedAccounts(users),
       pending: Array.isArray(parsed.pending) ? parsed.pending : [],
       ministryRequests: Array.isArray(parsed.ministryRequests) ? parsed.ministryRequests : [],
+      usernameRequests: Array.isArray(parsed.usernameRequests) ? parsed.usernameRequests : [],
       ministries: Array.isArray(parsed.ministries) && parsed.ministries.length > 0
         ? sortEntries([...new Set([...parsed.ministries, ...defaultMinistries])])
         : [...defaultMinistries]
@@ -3904,6 +4066,16 @@ function getUsernames(user) {
   return Array.isArray(user.usernames) && user.usernames.length > 0 ? user.usernames : [user.username].filter(Boolean);
 }
 
+function isUsernameTaken(username, excludeUserId = "") {
+  const normalized = String(username ?? "").trim();
+  if (!normalized) {
+    return true;
+  }
+
+  return authState.users.some((user) => user.id !== excludeUserId && getUsernames(user).includes(normalized))
+    || (authState.usernameRequests ?? []).some((request) => request.userId !== excludeUserId && request.requestedUsername === normalized);
+}
+
 function updateCurrentUser(updater) {
   if (!currentUser) {
     return;
@@ -4002,6 +4174,14 @@ function getPendingMinistryRequestsForUser(userId) {
 
 function getActionableMinistryRequests() {
   return (authState.ministryRequests ?? []).filter((request) => canApproveMinistryRequest(request));
+}
+
+function getPendingUsernameRequestsForUser(userId) {
+  return (authState.usernameRequests ?? []).filter((request) => request.userId === userId);
+}
+
+function getActionableUsernameRequests() {
+  return hasAdminAccess() ? (authState.usernameRequests ?? []) : [];
 }
 
 function canApproveMinistryRequest(request) {
