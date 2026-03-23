@@ -968,6 +968,10 @@ code {
   color: var(--muted);
 }
 
+.ministry-card .secondary-btn {
+  justify-self: start;
+}
+
 .managed-ministry-row {
   display: grid;
   gap: 10px;

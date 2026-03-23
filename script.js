@@ -39,7 +39,7 @@ const registrationRoleLabels = {
 };
 
 const ministryNameAliases = {
-  "Praise And Worship Team": "Worship Team",
+  "Worship Team": "Praise And Worship Team",
   "Info": "Info (3 branches)",
   "Tech": "Sound Technology",
   "Ushers": "Ushering"
@@ -66,7 +66,7 @@ const defaultMinistries = [
   "Sound Technology",
   "Stage Management",
   "Ushering",
-  "Worship Team"
+  "Praise And Worship Team"
 ];
 
 const defaultState = {
@@ -141,6 +141,23 @@ const announcementBoardMeta = {
   kids: { label: "Kids", ministry: "Kids", grantMinistries: ["Kids"] }
 };
 
+function getAnnouncementBoardConfig(sectionKey) {
+  if (sectionKey === "ministryDetail") {
+    const ministry = selectedMinistryPage || "Ministry";
+    return { label: ministry, ministry, grantMinistries: [ministry] };
+  }
+
+  return announcementBoardMeta[sectionKey] ?? { label: "Board", ministry: "", grantMinistries: [] };
+}
+
+function getAnnouncementStorageKey(sectionKey) {
+  if (sectionKey === "ministryDetail") {
+    return `ministry:${selectedMinistryPage || "Ministry"}`;
+  }
+
+  return sectionKey;
+}
+
 const samplePhotos = [
   {
     id: "sample-2",
@@ -202,7 +219,7 @@ const photoSectionMeta = {
   kids: { label: "Kids", pageSection: "kids" }
 };
 
-const sectionIds = ["home", "seats", "profile", "ministries", "search", "about", "organizer", "admin"];
+const sectionIds = ["home", "seats", "profile", "ministries", "ministryDetail", "search", "about", "organizer", "admin"];
 
 const loginGate = document.querySelector("#login-gate");
 const appShell = document.querySelector("#app-shell");
@@ -251,6 +268,20 @@ const profileSearchForm = document.querySelector("#profile-search-form");
 const profileSearchInput = document.querySelector("#profile-search-input");
 const profileSearchResults = document.querySelector("#profile-search-results");
 const ministriesList = document.querySelector("#ministries-list");
+const ministryDetailTitle = document.querySelector("#ministry-detail-title");
+const ministryDetailCopy = document.querySelector("#ministry-detail-copy");
+const ministryDetailExtra = document.querySelector("#ministry-detail-extra");
+const ministryDetailBack = document.querySelector("#ministry-detail-back");
+const ministryDetailPosts = document.querySelector("#ministry-detail-posts");
+const ministryDetailInput = document.querySelector("#ministry-detail-input");
+const ministryDetailSubmit = document.querySelector("#ministry-detail-submit");
+const ministryDetailMessage = document.querySelector("#ministry-detail-message");
+const ministryDetailGrantPanel = document.querySelector("#ministry-detail-grant-panel");
+const ministryDetailBoardTitle = document.querySelector("#ministry-detail-board-title");
+const ministryDetailGrantUser = document.querySelector("#ministry-detail-grant-user");
+const ministryDetailGrantUserList = document.querySelector("#ministry-detail-grant-user-list");
+const ministryDetailGrantButton = document.querySelector("#ministry-detail-grant-button");
+const ministryDetailGrants = document.querySelector("#ministry-detail-grants");
 const changePasswordForm = document.querySelector("#change-password-form");
 const currentPasswordInput = document.querySelector("#current-password");
 const newPasswordInput = document.querySelector("#new-password");
@@ -296,6 +327,8 @@ const homeCarouselDots = document.querySelector("#home-carousel-dots");
 const homeCarouselPrev = document.querySelector("#home-carousel-prev");
 const homeCarouselNext = document.querySelector("#home-carousel-next");
 const announcementsInput = document.querySelector("#announcements-input");
+const generalAnnouncementToggleWrap = document.querySelector("#general-announcement-toggle-wrap");
+const generalAnnouncementToggle = document.querySelector("#general-announcement-toggle");
 const adonaiAnnouncementsInput = document.querySelector("#adonai-announcements-input");
 const hamakomAnnouncementsInput = document.querySelector("#hamakom-announcements-input");
 const agapeAnnouncementsInput = document.querySelector("#agape-announcements-input");
@@ -444,6 +477,7 @@ let homeCarouselResolved = false;
 let carouselScrollPauseTimer = null;
 let profileEditMode = false;
 let lastProfileSearchTerm = "";
+let selectedMinistryPage = "Praise And Worship Team";
 let pendingSeatSelections = [];
 let adminUserSyncInFlight = false;
 let ministryRequestSyncInFlight = false;
@@ -524,6 +558,17 @@ const announcementRefs = {
     grantUserList: kidsAnnouncementsGrantUserList,
     grantButton: kidsAnnouncementsGrantButton,
     grants: kidsAnnouncementsGrants
+  },
+  ministryDetail: {
+    input: ministryDetailInput,
+    posts: ministryDetailPosts,
+    submit: ministryDetailSubmit,
+    message: ministryDetailMessage,
+    grantPanel: ministryDetailGrantPanel,
+    grantUser: ministryDetailGrantUser,
+    grantUserList: ministryDetailGrantUserList,
+    grantButton: ministryDetailGrantButton,
+    grants: ministryDetailGrants
   }
 };
 
@@ -549,6 +594,12 @@ function initializeApp() {
   profilePhotoForm.addEventListener("submit", handleProfilePhotoSave);
   profileMinistryForm.addEventListener("submit", handleProfileMinistrySave);
   profileSearchForm.addEventListener("submit", handleProfileSearch);
+  ministryDetailBack?.addEventListener("click", () => {
+    activeSection = "ministries";
+    renderSections();
+  });
+  ministryDetailSubmit?.addEventListener("click", () => handleAnnouncementSubmit("ministryDetail"));
+  ministryDetailGrantButton?.addEventListener("click", () => handleAnnouncementGrant("ministryDetail"));
   changePasswordForm.addEventListener("submit", handlePasswordChange);
   changeUsernameForm.addEventListener("submit", handleUsernameChangeRequest);
   createMinistryForm.addEventListener("submit", handleCreateMinistry);
@@ -1154,7 +1205,7 @@ function pullPawProfilesIntoRegistry() {
     state.registries[key] = sortEntries([...new Set([...(state.registries[key] ?? []), ...(synced[key] ?? [])])]);
   });
   persistOrganizer();
-  organizerModeNote.textContent = "Worship Team profiles pulled into the registry.";
+  organizerModeNote.textContent = "Praise and Worship Team profiles pulled into the registry.";
   renderOrganizer();
 }
 
@@ -1203,6 +1254,7 @@ function handleAnnouncementSubmit(sectionKey) {
   if (!refs) {
     return;
   }
+  const storageKey = getAnnouncementStorageKey(sectionKey);
 
   if (!canPostAnnouncement(sectionKey)) {
     refs.message.textContent = "You do not have posting permission for this board.";
@@ -1215,18 +1267,25 @@ function handleAnnouncementSubmit(sectionKey) {
     return;
   }
 
+  const targetSection = sectionKey === "home" && generalAnnouncementToggle?.checked && canPostGeneralAnnouncement()
+    ? "general"
+    : storageKey;
   const post = {
-    id: `announcement-${sectionKey}-${Date.now()}`,
+    id: `announcement-${targetSection}-${Date.now()}`,
     authorId: currentUser?.id || "",
     authorName: currentUser?.name || currentUser?.username || "Unknown",
     content,
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
+    scope: targetSection
   };
 
-  announcements.posts[sectionKey] = [...getAnnouncementPosts(sectionKey), post];
+  announcements.posts[targetSection] = [...getAnnouncementPostsForStorage(targetSection), post];
   markAnnouncementGrantUsed(sectionKey, currentUser?.id);
   persistAnnouncements();
   refs.input.value = "";
+  if (sectionKey === "home" && generalAnnouncementToggle) {
+    generalAnnouncementToggle.checked = false;
+  }
   refs.message.textContent = "Announcement posted.";
   renderAnnouncements();
 }
@@ -1236,6 +1295,7 @@ function handleAnnouncementGrant(sectionKey) {
   if (!refs || !canGrantAnnouncementPost(sectionKey)) {
     return;
   }
+  const storageKey = getAnnouncementStorageKey(sectionKey);
 
   const userId = resolveGrantUserId(refs.grantUser.value);
   if (!userId) {
@@ -1262,7 +1322,7 @@ function handleAnnouncementGrant(sectionKey) {
     grants.push(nextGrant);
   }
 
-  announcements.grants[sectionKey] = grants;
+  announcements.grants[storageKey] = grants;
   persistAnnouncements();
   refs.message.textContent = "1 post permission granted.";
   renderAnnouncements();
@@ -1522,26 +1582,58 @@ function renderMinistriesPage() {
     const card = document.createElement("article");
     card.className = "managed-ministry-row ministry-card";
 
-    const isWorshipTeam = ministry === "Worship Team";
+    const isWorshipTeam = ministry === "Praise And Worship Team";
     card.innerHTML = `
       <div class="ministry-card-head">
         <strong>${escapeHtml(ministry)}</strong>
       </div>
-      <p class="ministry-card-copy">${isWorshipTeam ? "Open the schedule and assignments here." : "This ministry page is blank for now."}</p>
-      ${isWorshipTeam ? `<button class="secondary-btn ministry-open-btn" type="button">Open Schedule</button>` : ""}
+      <p class="ministry-card-copy">${isWorshipTeam ? "Open this ministry page to view updates and the schedule link." : "Open this ministry page to view announcements."}</p>
+      <button class="secondary-btn ministry-open-btn" type="button">Open Page</button>
     `;
 
     const openButton = card.querySelector(".ministry-open-btn");
     if (openButton) {
       openButton.addEventListener("click", () => {
-        activeSection = "organizer";
+        selectedMinistryPage = ministry;
+        activeSection = "ministryDetail";
         renderSections();
-        renderOrganizer();
+        renderMinistryDetailPage();
       });
     }
 
     ministriesList.appendChild(card);
   });
+}
+
+function renderMinistryDetailPage() {
+  if (!ministryDetailTitle) {
+    return;
+  }
+
+  const ministry = selectedMinistryPage || "Ministry";
+  ministryDetailTitle.textContent = ministry;
+  ministryDetailBoardTitle.textContent = `${ministry} Board`;
+  ministryDetailCopy.textContent = "General announcements from Stage Management and upper admins also appear here.";
+  ministryDetailInput.placeholder = `Write a post for ${ministry}`;
+  ministryDetailExtra.innerHTML = "";
+
+  if (ministry === "Praise And Worship Team") {
+    const copy = document.createElement("p");
+    copy.className = "mode-note";
+    copy.textContent = canEditOrganizer()
+      ? "You can also open the scheduling page from here."
+      : "The schedule is managed from admin mode by Praise and Worship Team heads, assistants, and upper admins.";
+    const button = document.createElement("button");
+    button.className = "secondary-btn";
+    button.type = "button";
+    button.textContent = "Open Schedule";
+    button.addEventListener("click", () => {
+      activeSection = "organizer";
+      renderSections();
+      renderOrganizer();
+    });
+    ministryDetailExtra.append(copy, button);
+  }
 }
 
 function renderProfileMinistries() {
@@ -2830,10 +2922,10 @@ function renderOrganizer() {
   pastorRequestName.disabled = !editingEnabled;
   pastorRequestForm.querySelector("button").disabled = !editingEnabled;
   resetDemoButton.disabled = !editingEnabled;
-  if (!organizerModeNote.textContent || organizerModeNote.textContent.includes("Worship Team profiles pulled")) {
+  if (!organizerModeNote.textContent || organizerModeNote.textContent.includes("Praise and Worship Team profiles pulled")) {
     organizerModeNote.textContent = canEditOrganizer()
-      ? "Admin mode is active. Editing is enabled for the Worship Team schedule."
-      : "You are in view mode. Turn on Admin to edit the Worship Team schedule.";
+      ? "Admin mode is active. Editing is enabled for the Praise and Worship Team schedule."
+      : "You are in view mode. Turn on Admin to edit the Praise and Worship Team schedule.";
   }
   renderRegistryGroups(syncedRegistry);
   renderPastorRequests();
@@ -3201,7 +3293,7 @@ function getPawProfileRegistryNames() {
 
 function getPawMinistryRole(user) {
   return (Array.isArray(user?.titles) ? user.titles : []).find((title) =>
-    title.scope === "ministry" && title.ministry === "Worship Team"
+    title.scope === "ministry" && title.ministry === "Praise And Worship Team"
   )?.role || "";
 }
 
@@ -3514,8 +3606,8 @@ function exportRangePdf(startDateValue, monthsValue, serviceFilter = "") {
     </tr>
   `).join("");
 
-  const pdfTitle = serviceFilter ? `Worship Team Schedule - ${state.services[serviceFilter].label}` : "Worship Team Schedule";
-  const subtitle = `Saved ${serviceFilter ? state.services[serviceFilter].label : "Worship Team Schedule"} records from ${escapeHtml(formatValue("date", startDate))} for the next ${months} month${months > 1 ? "s" : ""}. Use the browser print dialog and choose Save as PDF.`;
+  const pdfTitle = serviceFilter ? `Praise and Worship Team Schedule - ${state.services[serviceFilter].label}` : "Praise and Worship Team Schedule";
+  const subtitle = `Saved ${serviceFilter ? state.services[serviceFilter].label : "Praise and Worship Team Schedule"} records from ${escapeHtml(formatValue("date", startDate))} for the next ${months} month${months > 1 ? "s" : ""}. Use the browser print dialog and choose Save as PDF.`;
   printWindow.document.write(buildPdfDocument(pdfTitle, subtitle, rows));
   printWindow.document.close();
 }
@@ -3749,7 +3841,7 @@ function loadPhotoUploadGrants() {
 
 function loadAnnouncements() {
   const saved = window.localStorage.getItem(ANNOUNCEMENTS_KEY);
-  const fallback = { posts: { home: [], adonai: [], hamakom: [], agape: [], dance: [], kids: [] }, grants: { home: [], adonai: [], hamakom: [], agape: [], dance: [], kids: [] } };
+  const fallback = { posts: { general: [], home: [], adonai: [], hamakom: [], agape: [], dance: [], kids: [] }, grants: { home: [], adonai: [], hamakom: [], agape: [], dance: [], kids: [] } };
 
   if (!saved) {
     return fallback;
@@ -3770,6 +3862,8 @@ function loadAnnouncements() {
     if (parsed.posts || parsed.grants) {
       return {
         posts: {
+          ...Object.fromEntries(Object.entries(parsed.posts ?? {}).map(([key, value]) => [key, Array.isArray(value) ? value : []])),
+          general: Array.isArray(parsed.posts?.general) ? parsed.posts.general : [],
           home: Array.isArray(parsed.posts?.home) ? parsed.posts.home : [],
           adonai: Array.isArray(parsed.posts?.adonai) ? parsed.posts.adonai : [],
           hamakom: Array.isArray(parsed.posts?.hamakom) ? parsed.posts.hamakom : [],
@@ -3778,6 +3872,7 @@ function loadAnnouncements() {
           kids: Array.isArray(parsed.posts?.kids) ? parsed.posts.kids : []
         },
         grants: {
+          ...Object.fromEntries(Object.entries(parsed.grants ?? {}).map(([key, value]) => [key, Array.isArray(value) ? value : []])),
           home: Array.isArray(parsed.grants?.home) ? parsed.grants.home : [],
           adonai: Array.isArray(parsed.grants?.adonai) ? parsed.grants.adonai : [],
           hamakom: Array.isArray(parsed.grants?.hamakom) ? parsed.grants.hamakom : [],
@@ -3790,8 +3885,9 @@ function loadAnnouncements() {
 
     return {
       ...fallback,
-      posts: {
-        home: parsed.home ? [buildLegacyAnnouncementPost(parsed.home)] : [],
+        posts: {
+          general: [],
+          home: parsed.home ? [buildLegacyAnnouncementPost(parsed.home)] : [],
         adonai: parsed.adonai ? [buildLegacyAnnouncementPost(parsed.adonai)] : [],
         hamakom: parsed.hamakom ? [buildLegacyAnnouncementPost(parsed.hamakom)] : [],
         agape: parsed.agape ? [buildLegacyAnnouncementPost(parsed.agape)] : [],
@@ -4378,9 +4474,13 @@ function persistActiveSection() {
 
 function renderAnnouncements() {
   Object.entries(announcementRefs).forEach(([sectionKey, refs]) => {
+    if (sectionKey === "ministryDetail" && activeSection !== "ministryDetail") {
+      return;
+    }
     const posts = getAnnouncementPosts(sectionKey);
     const canPost = canPostAnnouncement(sectionKey);
     const statusNote = getAnnouncementStatusNote(sectionKey);
+    const boardConfig = getAnnouncementBoardConfig(sectionKey);
     refs.posts.innerHTML = `
       ${statusNote ? `<div class="announcement-status-note">${escapeHtml(statusNote)}</div>` : ""}
       ${posts.length
@@ -4392,9 +4492,9 @@ function renderAnnouncements() {
           </div>
           <strong class="announcement-post-author">${escapeHtml(post.authorName || "Unknown")}</strong>
           <div class="announcement-post-body">${escapeHtml(post.content || "").replace(/\n/g, "<br>")}</div>
-          ${canDeleteAnnouncement(sectionKey, post) ? `
+          ${canDeleteAnnouncement(post.scope || sectionKey, post) ? `
             <div class="announcement-post-actions">
-              <button class="ghost-btn announcement-delete-btn" type="button" data-section="${sectionKey}" data-post-id="${escapeHtml(post.id)}">Remove Announcement</button>
+              <button class="ghost-btn announcement-delete-btn" type="button" data-section="${post.scope || sectionKey}" data-post-id="${escapeHtml(post.id)}">Remove Announcement</button>
             </div>
           ` : ""}
         </article>
@@ -4407,8 +4507,15 @@ function renderAnnouncements() {
     refs.input.classList.toggle("app-hidden", !canPost);
     refs.submit.classList.toggle("app-hidden", !canPost);
     refs.message.classList.toggle("app-hidden", !canPost);
+    if (sectionKey === "home" && generalAnnouncementToggleWrap && generalAnnouncementToggle) {
+      const canUseGeneral = canPost && canPostGeneralAnnouncement();
+      generalAnnouncementToggleWrap.classList.toggle("app-hidden", !canUseGeneral);
+      if (!canUseGeneral) {
+        generalAnnouncementToggle.checked = false;
+      }
+    }
     refs.input.placeholder = canPost
-      ? `Write a post for ${announcementBoardMeta[sectionKey].label}`
+      ? `Write a post for ${boardConfig.label}`
       : "View only";
     refs.grantPanel.classList.toggle("app-hidden", !canGrantAnnouncementPost(sectionKey));
     populateAnnouncementGrantUsers(sectionKey);
@@ -4429,6 +4536,7 @@ function populateAnnouncementGrantUsers(sectionKey) {
 function renderAnnouncementGrantList(sectionKey) {
   const refs = announcementRefs[sectionKey];
   const grants = getAnnouncementGrants(sectionKey);
+  const storageKey = getAnnouncementStorageKey(sectionKey);
 
   refs.grants.innerHTML = grants.length
     ? grants.map((grant) => {
@@ -4443,8 +4551,8 @@ function renderAnnouncementGrantList(sectionKey) {
             <span class="status-pill">${escapeHtml(grant.status === "used" ? "Used" : "Unused")}</span>
           </div>
           <div class="admin-actions">
-            <button class="ghost-btn grant-reset-btn" type="button" data-section="${sectionKey}" data-user-id="${escapeHtml(grant.userId)}">Reset</button>
-            <button class="ghost-btn grant-revoke-btn" type="button" data-section="${sectionKey}" data-user-id="${escapeHtml(grant.userId)}">Revoke</button>
+            <button class="ghost-btn grant-reset-btn" type="button" data-section="${escapeHtml(storageKey)}" data-user-id="${escapeHtml(grant.userId)}">Reset</button>
+            <button class="ghost-btn grant-revoke-btn" type="button" data-section="${escapeHtml(storageKey)}" data-user-id="${escapeHtml(grant.userId)}">Revoke</button>
           </div>
         </article>
       `;
@@ -4460,11 +4568,26 @@ function renderAnnouncementGrantList(sectionKey) {
 }
 
 function getAnnouncementPosts(sectionKey) {
+  const ownPosts = getAnnouncementPostsForStorage(getAnnouncementStorageKey(sectionKey));
+  if (sectionKey === "general") {
+    return ownPosts;
+  }
+
+  const generalPosts = getAnnouncementPostsForStorage("general");
+  return sortAnnouncementPosts([...generalPosts, ...ownPosts]);
+}
+
+function getAnnouncementPostsForStorage(sectionKey) {
   return Array.isArray(announcements.posts?.[sectionKey]) ? announcements.posts[sectionKey] : [];
 }
 
+function sortAnnouncementPosts(posts) {
+  return [...posts].sort((left, right) => (right.createdAt || "").localeCompare(left.createdAt || ""));
+}
+
 function getAnnouncementGrants(sectionKey) {
-  return Array.isArray(announcements.grants?.[sectionKey]) ? [...announcements.grants[sectionKey]] : [];
+  const storageKey = getAnnouncementStorageKey(sectionKey);
+  return Array.isArray(announcements.grants?.[storageKey]) ? [...announcements.grants[storageKey]] : [];
 }
 
 function buildLegacyAnnouncementPost(content) {
@@ -4490,13 +4613,27 @@ function canPostAnnouncement(sectionKey) {
   return Boolean(grant);
 }
 
+function canPostGeneralAnnouncement() {
+  if (!currentUser || !adminMode) {
+    return false;
+  }
+
+  return isCreator()
+    || ["headAdmin", "admin"].includes(currentUser.role)
+    || hasMinistryLeadership(currentUser, "Stage Management");
+}
+
 function getAnnouncementStatusNote(sectionKey) {
   if (!currentUser) {
     return "";
   }
 
+  if (sectionKey === "home" && canPostGeneralAnnouncement()) {
+    return "Stage Management and upper admins can post a general announcement from here.";
+  }
+
   if (canModerateAnnouncementBoard(sectionKey)) {
-    return `You can post and manage announcements for ${announcementBoardMeta[sectionKey].label}.`;
+    return `You can post and manage announcements for ${getAnnouncementBoardConfig(sectionKey).label}.`;
   }
 
   const grant = getAnnouncementGrants(sectionKey).find((entry) => entry.userId === currentUser.id);
@@ -4513,12 +4650,12 @@ function canDeleteAnnouncement(sectionKey, post) {
 }
 
 function removeAnnouncementPost(sectionKey, postId) {
-  const post = getAnnouncementPosts(sectionKey).find((entry) => entry.id === postId);
+  const post = getAnnouncementPostsForStorage(sectionKey).find((entry) => entry.id === postId);
   if (!post || !canDeleteAnnouncement(sectionKey, post)) {
     return;
   }
 
-  announcements.posts[sectionKey] = getAnnouncementPosts(sectionKey).filter((entry) => entry.id !== postId);
+  announcements.posts[sectionKey] = getAnnouncementPostsForStorage(sectionKey).filter((entry) => entry.id !== postId);
   persistAnnouncements();
   renderAnnouncements();
 }
@@ -4532,6 +4669,14 @@ function canGrantAnnouncementPost(sectionKey) {
 }
 
 function canModerateAnnouncementBoard(sectionKey) {
+  if (sectionKey === "general") {
+    return Boolean(currentUser) && adminMode && (
+      isCreator()
+      || ["headAdmin", "admin"].includes(currentUser.role)
+      || hasMinistryLeadership(currentUser, "Stage Management")
+    );
+  }
+
   if (!currentUser) {
     return false;
   }
@@ -4548,7 +4693,7 @@ function canModerateAnnouncementBoard(sectionKey) {
     return true;
   }
 
-  const ministry = announcementBoardMeta[sectionKey]?.ministry;
+  const ministry = getAnnouncementBoardConfig(sectionKey)?.ministry;
   return hasMinistryLeadership(currentUser, ministry);
 }
 
@@ -4846,7 +4991,7 @@ function canEditOrganizer() {
     || ["headAdmin", "admin"].includes(currentUser.role)
     || (Array.isArray(currentUser.titles) && currentUser.titles.some((title) =>
       title.scope === "ministry"
-      && title.ministry === "Worship Team"
+      && title.ministry === "Praise And Worship Team"
       && ["ministryHead", "ministryAssistant"].includes(title.role)
     ))
   );
@@ -5067,7 +5212,7 @@ function getAnnouncementGrantCandidates(sectionKey) {
     return authState.users.filter((user) => user.id !== currentUser?.id);
   }
 
-  const grantMinistries = announcementBoardMeta[sectionKey]?.grantMinistries ?? [];
+  const grantMinistries = getAnnouncementBoardConfig(sectionKey)?.grantMinistries ?? [];
   return authState.users.filter((user) =>
     user.id !== currentUser?.id
     && grantMinistries.some((ministry) => hasMinistryDownlinePostingRole(user, ministry))

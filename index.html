@@ -127,6 +127,10 @@
           </div>
           <div id="announcements-posts" class="announcement-posts"></div>
           <textarea id="announcements-input" class="announcements-input" placeholder="Write a post for Home"></textarea>
+          <label id="general-announcement-toggle-wrap" class="remember-toggle app-hidden">
+            <input id="general-announcement-toggle" type="checkbox">
+            <span>Post as general announcement</span>
+          </label>
           <div class="announcement-composer-actions">
             <button id="announcements-submit" class="secondary-btn" type="button">Post Announcement</button>
             <p id="announcements-message" class="auth-message announcement-message"></p>
@@ -366,6 +370,40 @@
             </div>
           </div>
           <div id="ministries-list" class="person-schedule-results"></div>
+        </article>
+      </section>
+
+      <section id="section-ministryDetail" class="page-section app-hidden">
+        <article class="shell-card announcements-card">
+          <div class="section-heading">
+            <div>
+              <p class="mini-label">Ministry</p>
+              <h2 id="ministry-detail-title">Ministry Board</h2>
+            </div>
+            <button id="ministry-detail-back" class="ghost-btn" type="button">Back to Ministries</button>
+          </div>
+          <p id="ministry-detail-copy" class="mode-note"></p>
+          <div id="ministry-detail-extra" class="announcement-composer-actions"></div>
+          <div id="ministry-detail-posts" class="announcement-posts"></div>
+          <textarea id="ministry-detail-input" class="announcements-input" placeholder="Write a post"></textarea>
+          <div class="announcement-composer-actions">
+            <button id="ministry-detail-submit" class="secondary-btn" type="button">Post Announcement</button>
+            <p id="ministry-detail-message" class="auth-message announcement-message"></p>
+          </div>
+          <div id="ministry-detail-grant-panel" class="announcement-grant-panel app-hidden">
+            <div class="section-heading">
+              <div>
+                <p class="mini-label">Grant 1 Post</p>
+                <h2 id="ministry-detail-board-title">Ministry Board</h2>
+              </div>
+            </div>
+            <div class="inline-form compact-form">
+              <input id="ministry-detail-grant-user" list="ministry-detail-grant-user-list" type="text" placeholder="Search user">
+              <datalist id="ministry-detail-grant-user-list"></datalist>
+              <button id="ministry-detail-grant-button" class="ghost-btn" type="button">Grant 1 Post</button>
+            </div>
+            <div id="ministry-detail-grants" class="grant-list"></div>
+          </div>
         </article>
       </section>
 
@@ -749,7 +787,7 @@
               </select>
               <input id="registry-name" type="text" placeholder="Add a name" autocomplete="off">
               <button class="secondary-btn" type="submit">Add</button>
-              <button id="pull-paw-profiles-btn" class="ghost-btn" type="button">Pull from Worship Team Profiles</button>
+              <button id="pull-paw-profiles-btn" class="ghost-btn" type="button">Pull from Praise and Worship Team Profiles</button>
             </form>
             <p id="organizer-mode-note" class="mode-note"></p>
 
