@@ -80,6 +80,20 @@ const defaultAuth = {
     profile: {}
   },
   {
+    id: "rcb-seed",
+    name: "RCB",
+    username: "RCB",
+    usernames: ["RCB"],
+    password: "RCB",
+    role: "admin",
+    isCreator: false,
+    titles: [
+      { scope: "platform", role: "admin", ministry: "" }
+    ],
+    ministries: [],
+    profile: {}
+  },
+  {
     id: "ferdie-seed",
     name: "Ferdie",
     username: "Ferdie",
