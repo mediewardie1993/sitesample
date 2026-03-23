@@ -9,6 +9,7 @@ const SESSION_TEMP_KEY = "jccm-site-session-temp-v1";
 const ANNOUNCEMENTS_KEY = "jccm-announcements-v3";
 const SEAT_LAYOUT_KEY = "jccm-seat-layout-v1";
 const ACTIVE_SECTION_KEY = "jccm-active-section-v1";
+const SEAT_RESET_KEY = "jccm-seat-layout-last-reset-v1";
 
 const registryMeta = {
   worshipLeaders: "Worship Leaders",
@@ -346,6 +347,14 @@ const navButtons = [...document.querySelectorAll(".nav-btn")];
 const adminNavButton = document.querySelector("#admin-nav-btn");
 const reserveSeatButton = document.querySelector("#reserve-seat-btn");
 const seatLayoutNote = document.querySelector("#seat-layout-note");
+const seatAdminActions = document.querySelector("#seat-admin-actions");
+const approveAllSeatsButton = document.querySelector("#approve-all-seats-btn");
+const clearAllSeatsButton = document.querySelector("#clear-all-seats-btn");
+const seatAdminMessage = document.querySelector("#seat-admin-message");
+const seatRequestActions = document.querySelector("#seat-request-actions");
+const confirmSeatRequestButton = document.querySelector("#confirm-seat-request-btn");
+const clearSeatRequestButton = document.querySelector("#clear-seat-request-btn");
+const seatRequestMessage = document.querySelector("#seat-request-message");
 const seatLayoutGroups = document.querySelector("#seat-layout-groups");
 const homeCarouselSlide = document.querySelector("#home-carousel-slide");
 const homeCarouselDots = document.querySelector("#home-carousel-dots");
@@ -466,6 +475,7 @@ let homeCarouselResolved = false;
 let carouselScrollPauseTimer = null;
 let profileEditMode = false;
 let lastProfileSearchTerm = "";
+let pendingSeatSelections = [];
 
 const carouselRefs = {
   sunday: { slide: homeCarouselSlide, dots: homeCarouselDots, prev: homeCarouselPrev, next: homeCarouselNext },
@@ -530,6 +540,10 @@ function initializeApp() {
   registerForm.addEventListener("submit", handleRegister);
   registerContactNumber.addEventListener("input", enforcePhilippineContactPrefix);
   reserveSeatButton.addEventListener("click", openSeatsPage);
+  approveAllSeatsButton.addEventListener("click", approveAllSeatRequests);
+  clearAllSeatsButton.addEventListener("click", clearAllSeats);
+  confirmSeatRequestButton.addEventListener("click", confirmSeatRequests);
+  clearSeatRequestButton.addEventListener("click", clearPendingSeatSelections);
   profileEditToggle.addEventListener("click", toggleProfileEditMode);
   profileForm.addEventListener("submit", handleProfileSave);
   profileContactNumber.addEventListener("input", enforceProfileContactPrefix);
@@ -580,6 +594,7 @@ function initializeApp() {
       handleLogoError();
     }
   }
+  maybeResetSeatLayout();
   buildSeatLayout();
   renderApp();
 }
@@ -629,29 +644,56 @@ function renderSeatLayout() {
     return;
   }
 
+  maybeResetSeatLayout();
   const canManage = canManageSeats();
+  const canRequest = Boolean(currentUser) && !canManage;
   if (seatLayoutNote) {
     seatLayoutNote.textContent = canManage
       ? "You can approve requests and update seat status on this page."
-      : "You can request available seats here. Only Ushers Head, Ushers Assistant Head, and upper admins can approve seats.";
+      : "You can select available seats here, then confirm your request. Only Ushers Head, Ushers Assistant Head, and upper admins can approve seats.";
+  }
+  seatAdminActions.classList.toggle("app-hidden", !canManage);
+  seatAdminMessage.classList.toggle("app-hidden", !canManage);
+  seatRequestActions.classList.toggle("app-hidden", !canRequest);
+  seatRequestMessage.classList.toggle("app-hidden", !canRequest);
+  const requestedSeats = getSeatIdsByStatus("requested");
+  approveAllSeatsButton.disabled = requestedSeats.length === 0;
+  clearAllSeatsButton.disabled = Object.keys(seatLayoutState).length === 0;
+  confirmSeatRequestButton.disabled = pendingSeatSelections.length === 0;
+  clearSeatRequestButton.disabled = pendingSeatSelections.length === 0;
+  if (canManage) {
+    seatAdminMessage.textContent = requestedSeats.length
+      ? `${requestedSeats.length} seat request${requestedSeats.length === 1 ? "" : "s"} waiting for approval.`
+      : "No seat requests waiting right now.";
+  }
+  if (canRequest && !seatRequestMessage.textContent) {
+    seatRequestMessage.textContent = pendingSeatSelections.length
+      ? `${pendingSeatSelections.length} seat${pendingSeatSelections.length === 1 ? "" : "s"} selected. Confirm when ready.`
+      : "";
   }
 
   seatLayoutGroups.querySelectorAll(".seat-cell").forEach((seat) => {
     const seatId = seat.dataset.seatId;
     const status = getSeatStatus(seatId);
     const requesterName = getSeatRequesterName(seatId);
-    seat.className = `seat-cell seat-cell-${status}`;
-    seat.innerHTML = `<span class="seat-cell-id">${escapeHtml(seatId)}</span>`;
+    const isPending = pendingSeatSelections.includes(seatId);
+    seat.className = `seat-cell seat-cell-${status}${isPending ? " seat-cell-pending" : ""}`;
+    seat.innerHTML = `<span class="seat-cell-id">${escapeHtml(seatId)}</span>${canManage && requesterName ? `<span class="seat-cell-name">${escapeHtml(requesterName)}</span>` : ""}`;
     const labelParts = [seatId, status];
+    if (isPending) {
+      labelParts.push("selected");
+    }
     if (requesterName) {
       labelParts.push(`requested by ${requesterName}`);
       seat.title = `${seatId} requested by ${requesterName}`;
+    } else if (isPending) {
+      seat.title = `${seatId} selected for request`;
     } else {
       seat.title = `${seatId} ${capitalizeWord(status)}`;
     }
     seat.setAttribute("aria-label", labelParts.join(" "));
-    seat.disabled = !canManage && !canRequestSeat(seatId);
-    seat.classList.toggle("seat-cell-locked", !canManage && !canRequestSeat(seatId));
+    seat.disabled = !canManage && !canRequestSeat(seatId) && !isPending;
+    seat.classList.toggle("seat-cell-locked", !canManage && !canRequestSeat(seatId) && !isPending);
   });
 }
 
@@ -670,7 +712,14 @@ function cycleSeatState(seatId) {
         : current === "reserved"
           ? "occupied"
           : "available";
-    seatLayoutState[seatId] = next === "available" ? "available" : { status: next, requestedBy: "", requestedByName: "" };
+    const existing = normalizeSeatEntry(seatLayoutState[seatId]);
+    seatLayoutState[seatId] = next === "available"
+      ? "available"
+      : {
+        status: next,
+        requestedBy: existing.requestedBy,
+        requestedByName: existing.requestedByName
+      };
     persistSeatLayoutState();
     renderSeatLayout();
     return;
@@ -681,19 +730,14 @@ function cycleSeatState(seatId) {
   }
 
   if (current === "available") {
-    seatLayoutState[seatId] = {
-      status: "requested",
-      requestedBy: currentUser.id,
-      requestedByName: currentUser.name || currentUser.username || "Unknown"
-    };
-  } else if (current === "requested" && isSeatRequestedByCurrentUser(seatId)) {
-    seatLayoutState[seatId] = "available";
-  } else {
-    return;
+    pendingSeatSelections = pendingSeatSelections.includes(seatId)
+      ? pendingSeatSelections.filter((entry) => entry !== seatId)
+      : [...pendingSeatSelections, seatId];
+    seatRequestMessage.textContent = pendingSeatSelections.length
+      ? `${pendingSeatSelections.length} seat${pendingSeatSelections.length === 1 ? "" : "s"} selected. Confirm when ready.`
+      : "";
+    renderSeatLayout();
   }
-
-  persistSeatLayoutState();
-  renderSeatLayout();
 }
 
 function canRequestSeat(seatId) {
@@ -702,7 +746,7 @@ function canRequestSeat(seatId) {
   }
 
   const status = getSeatStatus(seatId);
-  return status === "available" || (status === "requested" && isSeatRequestedByCurrentUser(seatId));
+  return status === "available";
 }
 
 function isSeatRequestedByCurrentUser(seatId) {
@@ -716,6 +760,74 @@ function getSeatStatus(seatId) {
 
 function getSeatRequesterName(seatId) {
   return normalizeSeatEntry(seatLayoutState[seatId]).requestedByName;
+}
+
+function confirmSeatRequests() {
+  if (!currentUser || canManageSeats() || pendingSeatSelections.length === 0) {
+    return;
+  }
+
+  const requestableSeats = pendingSeatSelections.filter((seatId) => getSeatStatus(seatId) === "available");
+  if (!requestableSeats.length) {
+    seatRequestMessage.textContent = "Those seats are no longer available.";
+    pendingSeatSelections = [];
+    renderSeatLayout();
+    return;
+  }
+
+  requestableSeats.forEach((seatId) => {
+    seatLayoutState[seatId] = {
+      status: "requested",
+      requestedBy: currentUser.id,
+      requestedByName: currentUser.name || currentUser.username || "Unknown"
+    };
+  });
+
+  persistSeatLayoutState();
+  pendingSeatSelections = [];
+  seatRequestMessage.textContent = `${requestableSeats.length} seat request${requestableSeats.length === 1 ? "" : "s"} sent for approval.`;
+  renderSeatLayout();
+}
+
+function clearPendingSeatSelections() {
+  pendingSeatSelections = [];
+  seatRequestMessage.textContent = "";
+  renderSeatLayout();
+}
+
+function approveAllSeatRequests() {
+  if (!canManageSeats()) {
+    return;
+  }
+
+  const requestedSeats = getSeatIdsByStatus("requested");
+  requestedSeats.forEach((seatId) => {
+    const existing = normalizeSeatEntry(seatLayoutState[seatId]);
+    seatLayoutState[seatId] = {
+      status: "reserved",
+      requestedBy: existing.requestedBy,
+      requestedByName: existing.requestedByName
+    };
+  });
+  persistSeatLayoutState();
+  seatAdminMessage.textContent = requestedSeats.length
+    ? `${requestedSeats.length} seat request${requestedSeats.length === 1 ? "" : "s"} approved.`
+    : "No seat requests waiting right now.";
+  renderSeatLayout();
+}
+
+function clearAllSeats() {
+  if (!canManageSeats()) {
+    return;
+  }
+
+  seatLayoutState = {};
+  pendingSeatSelections = [];
+  seatRequestMessage.textContent = "";
+  persistSeatLayoutState();
+  persistSeatResetTimestamp(Date.now());
+  seatAdminMessage.textContent = "All seats have been cleared.";
+  renderSeatLayout();
 }
 
 function normalizeSeatEntry(value) {
@@ -732,6 +844,12 @@ function normalizeSeatEntry(value) {
     requestedBy: "",
     requestedByName: ""
   };
+}
+
+function getSeatIdsByStatus(status) {
+  return Object.entries(seatLayoutState)
+    .filter(([, value]) => normalizeSeatEntry(value).status === status)
+    .map(([seatId]) => seatId);
 }
 
 function enforcePhilippineContactPrefix() {
@@ -801,6 +919,8 @@ function handleLogin(event) {
   authMessage.textContent = "";
   loginForm.reset();
   rememberMe.checked = false;
+  pendingSeatSelections = [];
+  seatRequestMessage.textContent = "";
   renderApp();
 }
 
@@ -910,6 +1030,8 @@ function handleLogout() {
   currentUser = null;
   adminMode = false;
   profileEditMode = false;
+  pendingSeatSelections = [];
+  seatRequestMessage.textContent = "";
   stopCarouselAutoplay();
   homeCarouselResolved = false;
   window.localStorage.removeItem(SESSION_KEY);
@@ -2940,6 +3062,46 @@ function loadSeatLayoutState() {
   } catch (error) {
     return {};
   }
+}
+
+function getLastSeatResetTimestamp() {
+  const raw = Number(window.localStorage.getItem(SEAT_RESET_KEY));
+  return Number.isFinite(raw) ? raw : 0;
+}
+
+function persistSeatResetTimestamp(timestamp) {
+  window.localStorage.setItem(SEAT_RESET_KEY, String(timestamp));
+}
+
+function getLatestSeatResetBoundary(now = new Date()) {
+  const boundary = new Date(now);
+  boundary.setHours(14, 0, 0, 0);
+  const day = boundary.getDay();
+  const daysSinceSunday = day;
+  boundary.setDate(boundary.getDate() - daysSinceSunday);
+  if (now < boundary) {
+    boundary.setDate(boundary.getDate() - 7);
+  }
+  return boundary;
+}
+
+function maybeResetSeatLayout() {
+  const latestBoundary = getLatestSeatResetBoundary();
+  const lastReset = getLastSeatResetTimestamp();
+  if (!latestBoundary || latestBoundary.getTime() <= 0 || lastReset >= latestBoundary.getTime()) {
+    return;
+  }
+
+  seatLayoutState = {};
+  pendingSeatSelections = [];
+  if (seatRequestMessage) {
+    seatRequestMessage.textContent = "";
+  }
+  if (seatAdminMessage) {
+    seatAdminMessage.textContent = "Seat layout reset for the new week.";
+  }
+  persistSeatLayoutState();
+  persistSeatResetTimestamp(latestBoundary.getTime());
 }
 
 function restoreSession() {

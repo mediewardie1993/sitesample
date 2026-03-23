@@ -451,6 +451,13 @@ code {
   color: var(--muted);
 }
 
+.seat-request-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
 .seat-grid {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
@@ -501,6 +508,11 @@ code {
   border-color: rgba(110, 184, 255, 0.34);
 }
 
+.seat-cell-pending {
+  border-color: rgba(184, 255, 212, 0.58);
+  box-shadow: 0 0 0 2px rgba(184, 255, 212, 0.16);
+}
+
 .seat-cell-reserved {
   background: rgba(255, 190, 92, 0.18);
   border-color: rgba(255, 190, 92, 0.34);
@@ -514,6 +526,15 @@ code {
 .seat-cell-id {
   display: block;
   font-weight: 700;
+}
+
+.seat-cell-name {
+  display: block;
+  margin-top: 3px;
+  font-size: 0.56rem;
+  line-height: 1.2;
+  color: var(--muted);
+  word-break: break-word;
 }
 
 .reserve-seat-btn {
