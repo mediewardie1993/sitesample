@@ -968,8 +968,20 @@ code {
   color: var(--muted);
 }
 
-.ministry-card .secondary-btn {
-  justify-self: start;
+.ministry-open-link {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 1.05rem;
+  font-weight: 700;
+  text-align: left;
+}
+
+.ministry-open-link:hover,
+.ministry-open-link:focus-visible {
+  color: var(--accent-strong);
+  text-decoration: underline;
 }
 
 .managed-ministry-row {

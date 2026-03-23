@@ -1585,13 +1585,12 @@ function renderMinistriesPage() {
     const isWorshipTeam = ministry === "Praise And Worship Team";
     card.innerHTML = `
       <div class="ministry-card-head">
-        <strong>${escapeHtml(ministry)}</strong>
+        <button class="ghost-btn ministry-open-link" type="button">${escapeHtml(ministry)}</button>
       </div>
       <p class="ministry-card-copy">${isWorshipTeam ? "Open this ministry page to view updates and the schedule link." : "Open this ministry page to view announcements."}</p>
-      <button class="secondary-btn ministry-open-btn" type="button">Open Page</button>
     `;
 
-    const openButton = card.querySelector(".ministry-open-btn");
+    const openButton = card.querySelector(".ministry-open-link");
     if (openButton) {
       openButton.addEventListener("click", () => {
         selectedMinistryPage = ministry;
