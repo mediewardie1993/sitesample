@@ -98,6 +98,7 @@
       <button class="nav-btn" data-section="hamakom" type="button">Hamakom</button>
       <button class="nav-btn" data-section="agape" type="button">Agape</button>
       <button class="nav-btn" data-section="dance" type="button">Dance</button>
+      <button class="nav-btn" data-section="kids" type="button">Kids</button>
       <button class="nav-btn" data-section="photos" type="button">Photos</button>
       <button class="nav-btn" data-section="organizer" type="button">PAW Schedule</button>
       <button class="nav-btn" data-section="seats" type="button">Seats</button>
@@ -374,6 +375,7 @@
                 <option value="hamakom">Hamakom</option>
                 <option value="agape">Agape</option>
                 <option value="dance">Dance</option>
+                <option value="kids">Kids</option>
               </select>
             </label>
             <label class="auth-field">
@@ -408,6 +410,7 @@
                 <option value="hamakom">Hamakom</option>
                 <option value="agape">Agape</option>
                 <option value="dance">Dance</option>
+                <option value="kids">Kids</option>
               </select>
               <input id="photo-grant-user" list="photo-grant-user-list" type="text" placeholder="Search user">
               <datalist id="photo-grant-user-list"></datalist>
@@ -425,6 +428,7 @@
                 <option value="hamakom">Hamakom</option>
                 <option value="agape">Agape</option>
                 <option value="dance">Dance</option>
+                <option value="kids">Kids</option>
               </select>
             </label>
             <label class="auth-field">
@@ -611,6 +615,48 @@
               <button id="dance-announcements-grant-button" class="ghost-btn" type="button">Grant 1 Post</button>
             </div>
             <div id="dance-announcements-grants" class="grant-list"></div>
+          </div>
+        </article>
+      </section>
+
+      <section id="section-kids" class="page-section app-hidden">
+        <article class="shell-card home-carousel-card">
+          <div class="home-title-row">
+            <h2>Kids Highlights</h2>
+          </div>
+          <div class="carousel-shell">
+            <button id="kids-carousel-prev" class="carousel-arrow" type="button" aria-label="Previous Kids photo">&#8249;</button>
+            <div class="carousel-stage">
+              <div id="kids-carousel-slide" class="carousel-slide"></div>
+              <div id="kids-carousel-dots" class="carousel-dots"></div>
+            </div>
+            <button id="kids-carousel-next" class="carousel-arrow" type="button" aria-label="Next Kids photo">&#8250;</button>
+          </div>
+        </article>
+
+        <article class="shell-card announcements-card">
+          <div class="home-title-row">
+            <h2>ANNOUNCEMENTS</h2>
+          </div>
+          <div id="kids-announcements-posts" class="announcement-posts"></div>
+          <textarea id="kids-announcements-input" class="announcements-input" placeholder="Write a post for Kids"></textarea>
+          <div class="announcement-composer-actions">
+            <button id="kids-announcements-submit" class="secondary-btn" type="button">Post Announcement</button>
+            <p id="kids-announcements-message" class="auth-message announcement-message"></p>
+          </div>
+          <div id="kids-announcements-grant-panel" class="announcement-grant-panel app-hidden">
+            <div class="section-heading">
+              <div>
+                <p class="mini-label">Grant 1 Post</p>
+                <h2>Kids Board</h2>
+              </div>
+            </div>
+            <div class="inline-form compact-form">
+              <input id="kids-announcements-grant-user" list="kids-announcements-grant-user-list" type="text" placeholder="Search user">
+              <datalist id="kids-announcements-grant-user-list"></datalist>
+              <button id="kids-announcements-grant-button" class="ghost-btn" type="button">Grant 1 Post</button>
+            </div>
+            <div id="kids-announcements-grants" class="grant-list"></div>
           </div>
         </article>
       </section>

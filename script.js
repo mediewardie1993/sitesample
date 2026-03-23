@@ -10,6 +10,8 @@ const ANNOUNCEMENTS_KEY = "jccm-announcements-v3";
 const SEAT_LAYOUT_KEY = "jccm-seat-layout-v1";
 const ACTIVE_SECTION_KEY = "jccm-active-section-v1";
 const SEAT_RESET_KEY = "jccm-seat-layout-last-reset-v1";
+const SUPABASE_URL = "https://gxgdetvlehwlxsenpijn.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_IAmOapMof9S8qv-rX8WoLg_fBXDqBTs";
 
 const registryMeta = {
   worshipLeaders: "Worship Leaders",
@@ -40,6 +42,7 @@ const defaultMinistries = [
   "Hamakom",
   "Agape",
   "Dance",
+  "Kids",
   "Emcee",
   "Info",
   "Pastoral",
@@ -163,7 +166,7 @@ const photoSectionMeta = {
   dance: { label: "Dance", pageSection: "dance" }
 };
 
-const sectionIds = ["home", "seats", "profile", "search", "photos", "adonai", "hamakom", "agape", "dance", "about", "organizer", "admin"];
+const sectionIds = ["home", "seats", "profile", "search", "photos", "adonai", "hamakom", "agape", "dance", "kids", "about", "organizer", "admin"];
 
 const loginGate = document.querySelector("#login-gate");
 const appShell = document.querySelector("#app-shell");
@@ -800,11 +803,11 @@ function setAuthMode(mode) {
   authMessage.textContent = "";
 }
 
-function handleLogin(event) {
+async function handleLogin(event) {
   event.preventDefault();
   const username = loginUsername.value.trim();
   const password = loginPassword.value.trim();
-  const matchedUser = authState.users.find((user) => {
+  let matchedUser = authState.users.find((user) => {
     const matchesUsername = getUsernames(user).includes(username);
     if (!matchesUsername) {
       return false;
@@ -816,6 +819,13 @@ function handleLogin(event) {
 
     return user.password === password;
   });
+
+  if (!matchedUser) {
+    const remoteLogin = await loginWithSupabase(username, password);
+    if (remoteLogin.success) {
+      matchedUser = syncRemoteUserLocally(remoteLogin.user);
+    }
+  }
 
   if (!matchedUser) {
     authMessage.textContent = "Login failed. Please check your username and password.";
@@ -838,7 +848,7 @@ function handleLogin(event) {
   renderApp();
 }
 
-function handleRegister(event) {
+async function handleRegister(event) {
   event.preventDefault();
   const name = registerName.value.trim();
   const username = registerUsername.value.trim();
@@ -886,23 +896,24 @@ function handleRegister(event) {
     return;
   }
 
-  authState.users.push({
-    id: `user-${Date.now()}`,
-    name,
+  const registrationResult = await registerWithSupabase({
     username,
-    usernames: [username],
     password,
-    role: "member",
-    titles: [],
-    ministries: [],
-    profile: {
-      birthday,
-      contactNumber,
-      gender
-    }
+    name,
+    birthday,
+    contactNumber,
+    gender
   });
+
+  if (!registrationResult.success) {
+    authMessage.textContent = registrationResult.message || "Account registration failed.";
+    return;
+  }
+
+  syncRemoteUserLocally(registrationResult.user, { password });
   persistAuth();
   registerForm.reset();
+  registerContactNumber.value = "+63";
   setAuthMode("login");
   authMessage.textContent = "Account created. You can log in now.";
 }
@@ -2934,6 +2945,57 @@ function loadAuthState() {
   }
 }
 
+async function callSupabaseRpc(functionName, payload) {
+  try {
+    const response = await window.fetch(`${SUPABASE_URL}/rest/v1/rpc/${functionName}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: data?.message || data?.error_description || data?.error || "Supabase request failed."
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { success: false, message: "Unexpected Supabase response." };
+  } catch (error) {
+    console.warn(`Supabase RPC ${functionName} failed.`, error);
+    return {
+      success: false,
+      message: "Could not reach the online account service right now."
+    };
+  }
+}
+
+async function loginWithSupabase(username, password) {
+  return callSupabaseRpc("login_user", {
+    p_username: username,
+    p_password: password
+  });
+}
+
+async function registerWithSupabase({ username, password, name, birthday, contactNumber, gender }) {
+  return callSupabaseRpc("register_user", {
+    p_username: username,
+    p_password: password,
+    p_full_name: name,
+    p_birthday: birthday,
+    p_contact_number: contactNumber,
+    p_gender: gender
+  });
+}
+
 function loadPhotos() {
   const saved = window.localStorage.getItem(PHOTOS_KEY);
   if (!saved) {
@@ -3168,6 +3230,55 @@ function normalizeUserAccount(user) {
   }
 
   return normalized;
+}
+
+function normalizeRemoteUserAccount(user, options = {}) {
+  if (!user || typeof user !== "object") {
+    return null;
+  }
+
+  return normalizeUserAccount({
+    id: user.id,
+    name: user.name || user.full_name || user.username || "",
+    username: user.username || "",
+    usernames: [user.username].filter(Boolean),
+    password: options.password ?? "",
+    role: user.role || "member",
+    isCreator: Boolean(user.isCreator),
+    titles: Array.isArray(user.titles) ? user.titles : inferTitlesFromLegacyUser({ role: user.role || "member" }),
+    ministries: Array.isArray(user.ministries) ? user.ministries : [],
+    profile: {
+      birthday: user.profile?.birthday || "",
+      contactNumber: user.profile?.contactNumber || "",
+      gender: user.profile?.gender || "",
+      occupation: user.profile?.occupation || "",
+      civilStatus: user.profile?.civilStatus || "",
+      photo: user.profile?.photo || ""
+    }
+  });
+}
+
+function syncRemoteUserLocally(remoteUser, options = {}) {
+  const normalized = normalizeRemoteUserAccount(remoteUser, options);
+  if (!normalized) {
+    return null;
+  }
+
+  const existingIndex = authState.users.findIndex((user) => user.id === normalized.id
+    || getUsernames(user).includes(normalized.username));
+
+  if (existingIndex >= 0) {
+    authState.users[existingIndex] = {
+      ...authState.users[existingIndex],
+      ...normalized,
+      password: options.password ?? authState.users[existingIndex].password ?? ""
+    };
+  } else {
+    authState.users.push(normalized);
+  }
+
+  persistAuth();
+  return authState.users.find((user) => user.id === normalized.id) ?? normalized;
 }
 
 function ensureSeedAccounts(users) {
