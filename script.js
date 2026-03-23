@@ -403,6 +403,7 @@ let lastProfileSearchTerm = "";
 let pendingSeatSelections = [];
 let adminUserSyncInFlight = false;
 let ministryRequestSyncInFlight = false;
+let currentUserSyncInFlight = false;
 
 const carouselRefs = {
   sunday: { slide: homeCarouselSlide, dots: homeCarouselDots, prev: homeCarouselPrev, next: homeCarouselNext },
@@ -1285,6 +1286,7 @@ function renderProfile() {
   }
 
   syncMinistryRequestsFromSupabase();
+  syncCurrentUserFromSupabase();
 
   const profile = currentUser.profile ?? {};
   const displayName = currentUser.name || currentUser.username || "Friend";
@@ -3635,6 +3637,12 @@ async function listSupabaseUsersForAdmin() {
   return callSupabaseRpc("list_users_admin", {});
 }
 
+async function getSupabaseUserById(userId) {
+  return callSupabaseRpc("get_user_by_id", {
+    p_user_id: userId
+  });
+}
+
 async function listSupabaseMinistryRequests() {
   return callSupabaseRpc("list_ministry_requests", {});
 }
@@ -3725,6 +3733,43 @@ async function syncMinistryRequestsFromSupabase() {
     }
   } finally {
     ministryRequestSyncInFlight = false;
+  }
+}
+
+async function syncCurrentUserFromSupabase() {
+  if (!currentUser || currentUser.isCreator || currentUserSyncInFlight) {
+    return;
+  }
+
+  currentUserSyncInFlight = true;
+  try {
+    const result = await getSupabaseUserById(currentUser.id);
+    if (!result?.success || !result.user) {
+      return;
+    }
+
+    const before = JSON.stringify({
+      ministries: currentUser.ministries ?? [],
+      titles: currentUser.titles ?? [],
+      role: currentUser.role,
+      profile: currentUser.profile ?? {}
+    });
+
+    const syncedUser = syncRemoteUserLocally(result.user);
+    currentUser = authState.users.find((user) => user.id === currentUser?.id) ?? syncedUser ?? currentUser;
+
+    const after = JSON.stringify({
+      ministries: currentUser.ministries ?? [],
+      titles: currentUser.titles ?? [],
+      role: currentUser.role,
+      profile: currentUser.profile ?? {}
+    });
+
+    if (before !== after && (activeSection === "profile" || activeSection === "search" || activeSection === "organizer")) {
+      renderApp();
+    }
+  } finally {
+    currentUserSyncInFlight = false;
   }
 }
 
