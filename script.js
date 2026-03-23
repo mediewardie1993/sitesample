@@ -2206,6 +2206,7 @@ function renderDisciplinaryActions(fullAdmin = hasAdminAccess()) {
 
   authState.users
     .slice()
+    .filter((account) => !account.isCreator && !isPrivilegedRole(account.role))
     .sort((left, right) => (left.name || left.username || "").localeCompare(right.name || right.username || ""))
     .forEach((account) => {
       const inDa = isInDaList(account.name || account.username || "");
@@ -2944,6 +2945,11 @@ function addRegistryItem(type, rawValue) {
 function addDaPerson(rawValue) {
   const value = rawValue.trim();
   if (!value || state.daList.some((request) => normalizePersonName(request) === normalizePersonName(value))) {
+    return;
+  }
+
+  const matchedUser = authState.users.find((user) => samePerson(user.name || user.username || "", value));
+  if (matchedUser && (matchedUser.isCreator || isPrivilegedRole(matchedUser.role))) {
     return;
   }
 
