@@ -162,7 +162,7 @@ const samplePhotos = [
     id: "sample-4",
     section: "sunday",
     date: "2026-03-15",
-    caption: "Worship Team",
+    caption: "Praise And Worship Team",
     imagePath: "sample-photos/504277569_1012165871120570_7521764333023615902_n.jpg",
     uploadedBy: "JCCM Sample"
   },
@@ -3626,7 +3626,13 @@ function loadAuthState() {
       ministryRequests: Array.isArray(parsed.ministryRequests) ? parsed.ministryRequests : [],
       usernameRequests: Array.isArray(parsed.usernameRequests) ? parsed.usernameRequests : [],
       ministries: Array.isArray(parsed.ministries) && parsed.ministries.length > 0
-        ? sortEntries([...new Set([...parsed.ministries, ...defaultMinistries])])
+        ? sortEntries(
+          [...new Set(
+            [...parsed.ministries, ...defaultMinistries]
+              .map(normalizeMinistryName)
+              .filter(Boolean)
+          )]
+        )
         : [...defaultMinistries]
     };
   } catch (error) {

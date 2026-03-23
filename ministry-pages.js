@@ -1,3 +1,30 @@
+const organizerSection = document.querySelector("#section-organizer");
+const appShell = document.querySelector(".app-shell");
+
+function detachOrganizerSection() {
+  if (!organizerSection || !appShell) {
+    return;
+  }
+
+  if (organizerSection.parentElement !== appShell) {
+    appShell.appendChild(organizerSection);
+  }
+
+  organizerSection.classList.add("app-hidden");
+}
+
+function attachOrganizerSectionToMinistryDetail() {
+  if (!organizerSection || !ministryDetailExtra) {
+    return;
+  }
+
+  if (organizerSection.parentElement !== ministryDetailExtra) {
+    ministryDetailExtra.appendChild(organizerSection);
+  }
+
+  organizerSection.classList.remove("app-hidden");
+}
+
 function getAnnouncementBoardConfig(sectionKey) {
   if (sectionKey === "ministryDetail") {
     const ministry = selectedMinistryPage || "Ministry";
@@ -60,22 +87,16 @@ function renderMinistryDetailPage() {
   ministryDetailCopy.textContent = "General announcements from Stage Management and upper admins also appear here.";
   ministryDetailInput.placeholder = `Write a post for ${ministry}`;
   ministryDetailExtra.innerHTML = "";
+  detachOrganizerSection();
 
   if (ministry === "Praise And Worship Team") {
     const copy = document.createElement("p");
     copy.className = "mode-note";
     copy.textContent = canEditOrganizer()
-      ? "You can also open the scheduling page from here."
+      ? "You can manage the schedule here in admin mode."
       : "The schedule is managed from admin mode by Praise and Worship Team heads, assistants, and upper admins.";
-    const button = document.createElement("button");
-    button.className = "secondary-btn";
-    button.type = "button";
-    button.textContent = "Open Schedule";
-    button.addEventListener("click", () => {
-      activeSection = "organizer";
-      renderSections();
-      renderOrganizer();
-    });
-    ministryDetailExtra.append(copy, button);
+    ministryDetailExtra.append(copy);
+    attachOrganizerSectionToMinistryDetail();
+    renderOrganizer();
   }
 }
