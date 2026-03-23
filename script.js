@@ -1377,7 +1377,11 @@ async function handleProfilePhotoSave(event) {
   }
 
   try {
-    const photoData = await readFileAsDataUrl(file);
+    const photoData = await compressImageFile(file, {
+      maxWidth: 360,
+      maxHeight: 360,
+      quality: 0.62
+    });
     updateCurrentUser((user) => ({
       ...user,
       profile: {
@@ -1859,6 +1863,7 @@ function renderAdmin() {
                 ${allowedRoles.map(([value, label]) => `<option value="${value}" ${account.role === value ? "selected" : ""}>${escapeHtml(label)}</option>`).join("")}
               </select>
             `}
+          <button class="ghost-btn reset-password-btn" type="button">Reset Password</button>
           <button class="ghost-btn remove-account-btn" type="button">Remove</button>
         </div>
       `;
@@ -1866,6 +1871,13 @@ function renderAdmin() {
       const roleSelect = item.querySelector(".role-select");
       if (roleSelect) {
         roleSelect.addEventListener("change", () => updateAccountRole(account.id, roleSelect.value));
+      }
+
+      const resetPasswordButton = item.querySelector(".reset-password-btn");
+      if (account.isCreator && !isCreator()) {
+        resetPasswordButton.disabled = true;
+      } else {
+        resetPasswordButton.addEventListener("click", () => resetManagedAccountPassword(account.id));
       }
 
       const removeButton = item.querySelector(".remove-account-btn");
@@ -2024,6 +2036,44 @@ function removeAccount(accountId) {
 
   authState.users = authState.users.filter((account) => account.id !== accountId);
   persistAuth();
+  renderAdmin();
+}
+
+function resetManagedAccountPassword(accountId) {
+  const target = authState.users.find((account) => account.id === accountId);
+  if (!target || !canViewManagedAccount(target)) {
+    return;
+  }
+
+  if (target.isCreator && !isCreator()) {
+    return;
+  }
+
+  const nextPasswordInput = window.prompt(`Set a new password for ${target.name || target.username}.`);
+  if (nextPasswordInput === null) {
+    return;
+  }
+
+  const nextPassword = nextPasswordInput.trim();
+  if (!nextPassword) {
+    window.alert("Password reset cancelled. A blank password is not allowed here.");
+    return;
+  }
+
+  if (!isValidPassword(nextPassword)) {
+    window.alert("Password must have at least 8 characters, 1 uppercase, 1 lowercase, and 1 special character.");
+    return;
+  }
+
+  authState.users = authState.users.map((account) => account.id === accountId
+    ? normalizeUserAccount({
+      ...account,
+      password: nextPassword
+    })
+    : account);
+
+  persistAuth();
+  window.alert(`Password reset saved for ${target.name || target.username}.`);
   renderAdmin();
 }
 
@@ -3895,6 +3945,42 @@ function buildDisplayNameMarkup(value) {
 
 function samePerson(left, right) {
   return Boolean(normalizePersonName(left)) && normalizePersonName(left) === normalizePersonName(right);
+}
+
+function compressImageFile(file, options = {}) {
+  const {
+    maxWidth = 480,
+    maxHeight = 480,
+    quality = 0.7
+  } = options;
+
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const image = new Image();
+      image.onload = () => {
+        const scale = Math.min(maxWidth / image.width, maxHeight / image.height, 1);
+        const width = Math.max(1, Math.round(image.width * scale));
+        const height = Math.max(1, Math.round(image.height * scale));
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const context = canvas.getContext("2d");
+
+        if (!context) {
+          reject(new Error("Canvas is not available."));
+          return;
+        }
+
+        context.drawImage(image, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      image.onerror = () => reject(new Error("Image could not be loaded."));
+      image.src = String(reader.result || "");
+    };
+    reader.onerror = () => reject(reader.error || new Error("File could not be read."));
+    reader.readAsDataURL(file);
+  });
 }
 
 function readFileAsDataUrl(file) {
