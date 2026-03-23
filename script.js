@@ -1443,15 +1443,23 @@ function renderProfileSearchResults() {
   profileSearchResults.querySelectorAll(".managed-ministry-remove").forEach((button) => {
     button.addEventListener("click", () => removeUserMinistry(button.dataset.userId, button.dataset.ministry));
   });
+
+  profileSearchResults.querySelectorAll(".managed-ministry-add").forEach((button) => {
+    button.addEventListener("click", () => {
+      const userId = button.dataset.userId;
+      const ministrySelect = profileSearchResults.querySelector(`.managed-ministry-new[data-user-id="${cssEscape(userId)}"]`);
+      const roleSelect = profileSearchResults.querySelector(`.managed-ministry-new-role[data-user-id="${cssEscape(userId)}"]`);
+      if (!ministrySelect || !roleSelect) {
+        return;
+      }
+      addUserMinistry(userId, ministrySelect.value, roleSelect.value);
+    });
+  });
 }
 
 function renderSearchProfileMinistries(user) {
   const ministries = Array.isArray(user?.ministries) ? user.ministries : [];
-  if (!ministries.length) {
-    return `<div>No ministries yet</div>`;
-  }
-
-  return ministries.map((ministry) => {
+  const rows = ministries.map((ministry) => {
     const roleValue = getMinistryRoleValue(user, ministry);
     const roleLabel = getMinistryRoleLabel(user, ministry);
     const canManage = canManageUserMinistry(user, ministry);
@@ -1475,6 +1483,33 @@ function renderSearchProfileMinistries(user) {
       </div>
     `;
   }).join("");
+
+  const availableMinistries = (authState.ministries ?? []).filter((ministry) => !ministries.includes(ministry));
+  const canManageAnyMinistry = canManageAnyUserMinistry(user);
+  const addRow = canManageAnyMinistry ? `
+    <div class="managed-ministry-row managed-ministry-add-row">
+      <span class="tag-label">Add ministry</span>
+      <div class="managed-ministry-actions">
+        <select class="managed-ministry-new" data-user-id="${escapeHtml(user.id)}">
+          <option value="">Select ministry</option>
+          ${availableMinistries.map((ministry) => `<option value="${escapeHtml(ministry)}">${escapeHtml(ministry)}</option>`).join("")}
+        </select>
+        <select class="managed-ministry-new-role" data-user-id="${escapeHtml(user.id)}">
+          ${Object.entries(registrationRoleLabels)
+            .filter(([value]) => requiresMinistry(value))
+            .map(([value, label]) => `<option value="${value}" ${value === "ministryMember" ? "selected" : ""}>${escapeHtml(label)}</option>`)
+            .join("")}
+        </select>
+        <button class="secondary-btn managed-ministry-add" type="button" data-user-id="${escapeHtml(user.id)}" ${availableMinistries.length ? "" : "disabled"}>Add</button>
+      </div>
+    </div>
+  ` : "";
+
+  if (!rows && !addRow) {
+    return `<div>No ministries yet</div>`;
+  }
+
+  return `${rows}${addRow}`;
 }
 
 function renderProfileMinistryOptions() {
@@ -1805,6 +1840,33 @@ function removeUserMinistry(userId, ministry) {
       ...user,
       ministries: (Array.isArray(user.ministries) ? user.ministries : []).filter((entry) => entry !== ministry),
       titles: (Array.isArray(user.titles) ? user.titles : []).filter((title) => !(title.scope === "ministry" && title.ministry === ministry))
+    });
+  });
+  currentUser = authState.users.find((user) => user.id === currentUser?.id) ?? currentUser;
+  persistAuth();
+  renderApp();
+}
+
+function addUserMinistry(userId, ministry, role) {
+  const target = authState.users.find((user) => user.id === userId);
+  if (!target || !canManageAnyUserMinistry(target) || !ministry || !requiresMinistry(role)) {
+    return;
+  }
+
+  if ((Array.isArray(target.ministries) ? target.ministries : []).includes(ministry)) {
+    renderApp();
+    return;
+  }
+
+  authState.users = authState.users.map((user) => {
+    if (user.id !== userId) {
+      return user;
+    }
+
+    return normalizeUserAccount({
+      ...user,
+      ministries: sortEntries([...(Array.isArray(user.ministries) ? user.ministries : []), ministry]),
+      titles: upsertMinistryTitle(user, ministry, role)
     });
   });
   currentUser = authState.users.find((user) => user.id === currentUser?.id) ?? currentUser;
@@ -4309,6 +4371,20 @@ function canManageUserMinistry(targetUser, ministry) {
     title.scope === "ministry"
     && title.ministry === ministry
     && title.role === "ministryHead"
+  );
+}
+
+function canManageAnyUserMinistry(targetUser) {
+  if (!currentUser || !adminMode || !targetUser) {
+    return false;
+  }
+
+  if (canManageMinistryAssignments()) {
+    return true;
+  }
+
+  return (Array.isArray(currentUser.titles) ? currentUser.titles : []).some((title) =>
+    title.scope === "ministry" && title.role === "ministryHead"
   );
 }
 
