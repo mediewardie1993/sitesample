@@ -1527,8 +1527,8 @@ function renderMinistriesPage() {
       <div class="ministry-card-head">
         <strong>${escapeHtml(ministry)}</strong>
       </div>
-      <p class="ministry-card-copy">${isWorshipTeam ? "Open the worship schedule and assignments here." : "This ministry page is blank for now."}</p>
-      ${isWorshipTeam ? `<button class="secondary-btn ministry-open-btn" type="button">Open Worship Team</button>` : ""}
+      <p class="ministry-card-copy">${isWorshipTeam ? "Open the schedule and assignments here." : "This ministry page is blank for now."}</p>
+      ${isWorshipTeam ? `<button class="secondary-btn ministry-open-btn" type="button">Open Schedule</button>` : ""}
     `;
 
     const openButton = card.querySelector(".ministry-open-btn");
