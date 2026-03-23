@@ -75,6 +75,20 @@ const defaultAuth = {
     ],
     ministries: [],
     profile: {}
+  },
+  {
+    id: "rcb-seed",
+    name: "RCB",
+    username: "RCB",
+    usernames: ["RCB"],
+    password: "RCB",
+    role: "member",
+    isCreator: false,
+    titles: [
+      { scope: "general", role: "churchMember", ministry: "" }
+    ],
+    ministries: [],
+    profile: {}
   }],
   pending: [],
   ministryRequests: [],

@@ -1,0 +1,180 @@
+JCCM Site Hub
+Features and Hierarchy Log
+
+Core Pages
+- Home
+- Profile
+- Adonai
+- Hamakom
+- Agape
+- Dance
+- Photos
+- PAW Schedule
+- Seats
+- About Us
+- Search Profile
+- Admin
+
+Authentication
+- Creator account aliases:
+  mediewardie
+  toGodbetheglory
+- Seeded member account:
+  username: RCB
+  password: RCB
+- Newly registered accounts are retained.
+- Remember Me is supported.
+- Users can change their own passwords from Profile.
+- Creator, Head Admin, and Admin can reset other users' passwords from Admin without viewing old passwords.
+
+Registration
+- Full Name
+- Username
+- Password
+- Birthday
+- Contact Number
+- Gender
+- Contact number format:
+  must start with +63
+  must contain exactly 10 digits after +63
+- Registration is immediate.
+- Duplicate full names are blocked.
+- Duplicate usernames are blocked.
+- Duplicate contact numbers are blocked.
+
+Profile
+- View-first profile with Edit Profile button
+- Profile photo
+- Birthday
+- Contact Number
+- Gender
+- Occupation
+- Civil Status
+- Change Password
+- Ministry applications
+- Search Profile page
+
+Ministries
+- Praise And Worship Team
+- Adonai
+- Hamakom
+- Agape
+- Dance
+- Emcee
+- Info
+- Pastoral
+- Tech
+- Ushers
+
+Ministry Roles
+- Ministry Head
+- Ministry Assistant Head
+- Primary Leader
+- Ministry Officer
+- Ministry Member
+
+Hierarchy Notes
+- Creator is top override.
+- Creator is not restricted by normal permission limits.
+- Head Admin and Admin have elevated platform permissions.
+- Creator can remove or change higher protected roles.
+- Head Admin can manage Admin-level accounts below Creator.
+- Admin can manage lower platform roles allowed by the current UI.
+- Ministry Head and Ministry Assistant can approve ministry applications for their own ministry.
+- Primary Leader is a title only and does not get admin-mode access by default.
+
+Announcements
+- Home
+- Adonai
+- Hamakom
+- Agape
+- Dance
+- Formal announcement cards
+- Centered formal styling
+- Per-board posting permissions
+- Grant 1 Post
+- Used post grants stop posting automatically
+- Moderators can remove announcements
+
+Announcement Permissions
+- Creator, Head Admin, Admin: can moderate all boards
+- Emcee Head and Emcee Assistant: can moderate announcement boards
+- Ministry Head and Ministry Assistant: can moderate their own ministry board
+- Downlines can post through granted one-post permissions
+- Ministry-level grantors are capped at 5 active unused grants
+- Creator, Head Admin, Admin are not capped
+
+Photos
+- Shared Photos hub
+- Sunday Service photos
+- Adonai photos
+- Hamakom photos
+- Agape photos
+- Dance photos
+- Fixed photo per section
+- Multiple upload support
+- Delete uploaded photos
+- Slideshow on page sections
+
+Photo Permissions
+- Creator, Head Admin, Admin: can grant uploads across ministries
+- Info Head and Info Assistant: can manage photo upload permissions
+- Grant 1 Upload
+- Used upload grants stop uploads automatically
+- Fixed photo upload is limited to Admin / Head Admin / Creator
+- Ministry-level grantors are capped at 5 active unused grants
+- Creator, Head Admin, Admin are not capped
+
+PAW Schedule
+- Adonai and Sunday Service scheduling
+- Saturday-only Adonai dates
+- Sunday-only Sunday Service dates
+- Searchable date input
+- View assignments by person with typable + suggested picker
+- PDF export:
+  Adonai only
+  Sunday only
+  Both
+  ranged export up to 1 year
+- DA List blocks assignment anywhere
+- Same-service duplicate prevention
+- Same-week and same-month worship leader conflict prompts
+- Cross-service same-week conflict prompts
+
+PAW Registry Rules
+- Worship Leaders sync from approved Praise And Worship Team leadership profiles:
+  Ministry Head
+  Ministry Assistant Head
+  Primary Leader
+- Backups are separate/manual
+- Worship Leaders are automatically included in backup assignment options
+- Musicians are separate/manual
+- Pull from PAW Profiles button is available
+
+Seats
+- Separate top-level Seats page
+- 3 seat blocks:
+  A
+  B
+  C
+- 7 x 7 per block
+- Stage at top
+- Click to select seats
+- Confirm Seat Request button
+- Clear Selection button
+- Requested / Reserved / Occupied color states
+- Admin-side requester name display
+- Approve All Seats button
+- Clear All Seats button
+- Auto reset every Sunday at 14:00 local browser time
+
+Seat Permissions
+- Anyone logged in can request available seats
+- Only Ushers Head, Ushers Assistant Head, Admin, Head Admin, and Creator can approve or manage seats
+
+Miscellaneous
+- Last visited page is remembered on refresh
+- Left auth pane uses JCCM logo
+- JCCM logo has hover animation
+- Reserve a seat button has hover animation
+- Profile photos are compressed before saving
