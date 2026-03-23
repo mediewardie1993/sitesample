@@ -785,7 +785,8 @@
                 <option value="backups">Backups</option>
                 <option value="musicians">Musicians</option>
               </select>
-              <input id="registry-name" type="text" placeholder="Add a name" autocomplete="off">
+              <input id="registry-name" list="registry-name-list" type="text" placeholder="Add a name" autocomplete="off">
+              <datalist id="registry-name-list"></datalist>
               <button class="secondary-btn" type="submit">Add</button>
               <button id="pull-paw-profiles-btn" class="ghost-btn" type="button">Pull from Praise and Worship Team Profiles</button>
             </form>
@@ -794,19 +795,6 @@
             <div id="registry-groups" class="registry-groups"></div>
           </section>
 
-          <aside id="da-list-card" class="shell-card compact-registry">
-            <div class="section-heading">
-              <div>
-                <p class="mini-label">DA List</p>
-                <h2>Disciplinary action</h2>
-              </div>
-            </div>
-            <form id="pastor-request-form" class="inline-form compact-form">
-              <input id="pastor-request-name" type="text" placeholder="Add person to DA list" autocomplete="off">
-              <button class="secondary-btn" type="submit">Add</button>
-            </form>
-            <div id="pastor-request-list" class="tag-list pastor-request-list"></div>
-          </aside>
         </div>
 
         <section class="shell-card">
@@ -837,6 +825,16 @@
             <button class="secondary-btn" type="submit">Show Schedule</button>
           </form>
           <div id="person-schedule-results" class="person-schedule-results"></div>
+        </section>
+
+        <section class="shell-card">
+          <div class="section-heading">
+            <div>
+              <p class="mini-label">Upcoming Schedule</p>
+              <h2>Assigned Praise and Worship Team for the next 3 months</h2>
+            </div>
+          </div>
+          <div id="organizer-upcoming-schedule" class="person-schedule-results"></div>
         </section>
 
         <section class="service-sections" id="service-sections"></section>

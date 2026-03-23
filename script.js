@@ -418,6 +418,7 @@ const sectionTemplate = document.querySelector("#service-section-template");
 const registryForm = document.querySelector("#registry-form");
 const registryType = document.querySelector("#registry-type");
 const registryName = document.querySelector("#registry-name");
+const registryNameList = document.querySelector("#registry-name-list");
 const pullPawProfilesButton = document.querySelector("#pull-paw-profiles-btn");
 const registryGroups = document.querySelector("#registry-groups");
 const registryCard = document.querySelector("#registry-card");
@@ -439,6 +440,7 @@ const personScheduleNameList = document.querySelector("#person-schedule-name-lis
 const personScheduleStart = document.querySelector("#person-schedule-start");
 const personScheduleMonths = document.querySelector("#person-schedule-months");
 const personScheduleResults = document.querySelector("#person-schedule-results");
+const organizerUpcomingSchedule = document.querySelector("#organizer-upcoming-schedule");
 
 let state = loadState();
 let history = loadHistory();
@@ -595,7 +597,7 @@ function initializeApp() {
   });
   registryForm.addEventListener("submit", handleRegistrySubmit);
   pullPawProfilesButton.addEventListener("click", pullPawProfilesIntoRegistry);
-  pastorRequestForm.addEventListener("submit", handlePastorRequestSubmit);
+  pastorRequestForm?.addEventListener("submit", handlePastorRequestSubmit);
   personScheduleForm.addEventListener("submit", handlePersonScheduleSubmit);
   saveAdonaiButton.addEventListener("click", () => exportRangePdf(pdfStartDateInput.value, pdfRangeMonthsSelect.value, "saturday"));
   saveSundayButton.addEventListener("click", () => exportRangePdf(pdfStartDateInput.value, pdfRangeMonthsSelect.value, "sunday"));
@@ -1197,6 +1199,9 @@ function handlePastorRequestSubmit(event) {
   if (!canEditOrganizer()) {
     return;
   }
+  if (!pastorRequestName) {
+    return;
+  }
   addDaPerson(pastorRequestName.value);
   pastorRequestName.value = "";
 }
@@ -1485,6 +1490,9 @@ function renderApp() {
   renderSeatLayout();
   renderProfile();
   renderMinistriesPage();
+  if (activeSection === "ministryDetail" && typeof renderMinistryDetailPage === "function") {
+    renderMinistryDetailPage();
+  }
   renderPhotos();
   renderOrganizer();
   renderAdmin();
@@ -2831,13 +2839,19 @@ function renderOrganizer() {
   }
   const editingEnabled = canEditOrganizer();
   registryCard.classList.toggle("app-hidden", !editingEnabled);
-  daListCard.classList.toggle("app-hidden", !editingEnabled);
   registryType.disabled = !editingEnabled;
   registryName.disabled = !editingEnabled;
   registryForm.querySelector("button").disabled = !editingEnabled;
   pullPawProfilesButton.disabled = !editingEnabled;
-  pastorRequestName.disabled = !editingEnabled;
-  pastorRequestForm.querySelector("button").disabled = !editingEnabled;
+  if (daListCard) {
+    daListCard.classList.toggle("app-hidden", !editingEnabled);
+  }
+  if (pastorRequestName) {
+    pastorRequestName.disabled = !editingEnabled;
+  }
+  if (pastorRequestForm?.querySelector("button")) {
+    pastorRequestForm.querySelector("button").disabled = !editingEnabled;
+  }
   resetDemoButton.disabled = !editingEnabled;
   if (!organizerModeNote.textContent || organizerModeNote.textContent.includes("Praise and Worship Team profiles pulled")) {
     organizerModeNote.textContent = canEditOrganizer()
@@ -2848,6 +2862,7 @@ function renderOrganizer() {
   renderPastorRequests();
   renderPersonScheduleControls();
   renderPersonScheduleResults();
+  renderUpcomingOrganizerSchedule();
   renderServices();
 }
 
@@ -2883,10 +2898,13 @@ function renderRegistryGroups(syncedRegistry = getPawProfileRegistryNames()) {
 
 function renderPersonScheduleControls() {
   const people = getAllRegistryPeople();
+  const approvedPawPeople = getApprovedPawProfileNames();
   const selected = personScheduleName.value;
   const placeholder = people.length > 0 ? "Type or pick a person" : "No registered people yet";
   personScheduleName.placeholder = placeholder;
   personScheduleNameList.innerHTML = people.map((name) => `<option value="${escapeHtml(getDisplayName(name))}"></option>`).join("");
+  registryNameList.innerHTML = approvedPawPeople.map((name) => `<option value="${escapeHtml(getDisplayName(name))}"></option>`).join("");
+  registryName.placeholder = approvedPawPeople.length > 0 ? "Type or pick an approved PAW member" : "No approved PAW members yet";
 
   if (selected) {
     const matchedPerson = people.find((name) => samePerson(name, selected));
@@ -2900,7 +2918,46 @@ function renderPersonScheduleControls() {
   }
 }
 
+function renderUpcomingOrganizerSchedule() {
+  if (!organizerUpcomingSchedule) {
+    return;
+  }
+
+  const startDate = normalizeDate(new Date().toISOString().slice(0, 10));
+  const endDate = addMonths(startDate, 3);
+  const upcomingEntries = sortHistory(history.filter((entry) => {
+    const entryDate = normalizeDate(entry.date);
+    return entryDate >= startDate
+      && entryDate < endDate
+      && getAllAssignedNames(entry).length > 0;
+  }));
+
+  organizerUpcomingSchedule.innerHTML = "";
+
+  if (!upcomingEntries.length) {
+    organizerUpcomingSchedule.innerHTML = `<div class="empty-card">No assigned Praise and Worship Team schedules were found in the next 3 months.</div>`;
+    return;
+  }
+
+  upcomingEntries.forEach((entry) => {
+    const card = document.createElement("article");
+    card.className = "person-schedule-card";
+    card.innerHTML = `
+      <strong>${escapeHtml(entry.label)}</strong>
+      <div class="person-schedule-meta">${escapeHtml(formatValue("date", entry.date))}</div>
+      <div>${escapeHtml(entry.worshipLeader || "No worship leader assigned")}</div>
+      <div>${escapeHtml(formatValue("backup", entry.backup))}</div>
+      <div>${escapeHtml(formatValue("musicians", entry.musicians))}</div>
+    `;
+    organizerUpcomingSchedule.appendChild(card);
+  });
+}
+
 function renderPastorRequests() {
+  if (!pastorRequestList) {
+    return;
+  }
+
   pastorRequestList.innerHTML = "";
 
   if (!canEditOrganizer()) {
@@ -3181,6 +3238,15 @@ function getEffectiveRegistryEntries(type, syncedRegistry = getPawProfileRegistr
   return sortEntries([...new Set([...(state.registries[type] ?? []), ...(syncedRegistry[type] ?? [])])]);
 }
 
+function getApprovedPawProfileNames() {
+  return sortEntries(
+    authState.users
+      .filter((user) => Boolean(getPawMinistryRole(user)) && !isExcludedLegacyOrTestAccount(user))
+      .map((user) => (user.name || user.username || "").trim())
+      .filter((name) => name && !isInDaList(name))
+  );
+}
+
 function getPawProfileRegistryNames() {
   const derived = {
     worshipLeaders: [],
@@ -3348,12 +3414,26 @@ function upsertHistoryForService(serviceId) {
 
 function addRegistryItem(type, rawValue) {
   const value = rawValue.trim();
+  const approvedPawPeople = getApprovedPawProfileNames();
+  const matchedApprovedPawPerson = approvedPawPeople.find((name) => samePerson(name, value));
 
-  if (!value || state.registries[type].some((name) => normalizePersonName(name) === normalizePersonName(value))) {
+  if (!matchedApprovedPawPerson) {
+    const labels = {
+      worshipLeaders: "Worship leaders",
+      backups: "Backups",
+      musicians: "Musicians"
+    };
+    window.alert(`${labels[type] ?? "Registry members"} must already be approved inside Praise And Worship Team.`);
     return;
   }
 
-  state.registries[type] = sortEntries([...state.registries[type], value]);
+  const nextValue = matchedApprovedPawPerson;
+
+  if (!nextValue || state.registries[type].some((name) => normalizePersonName(name) === normalizePersonName(nextValue))) {
+    return;
+  }
+
+  state.registries[type] = sortEntries([...state.registries[type], nextValue]);
 
   persistOrganizer();
   renderOrganizer();
@@ -3609,15 +3689,7 @@ function loadAuthState() {
     const parsed = JSON.parse(saved);
     const users = Array.isArray(parsed.users) && parsed.users.length > 0
       ? parsed.users
-        .filter((user) => {
-          const id = String(user?.id ?? "");
-          const usernames = Array.isArray(user?.usernames) ? user.usernames : [user?.username].filter(Boolean);
-          const removableSeedUsernames = ["admin", "medward", "medwardhead", "medwardadmin", "medwardmember1", "medwardmember2", "medwardvisitor"];
-          return !user?.isTemporary
-            && !id.startsWith("temp-")
-            && !user?.isTemporary
-            && !usernames.some((username) => removableSeedUsernames.includes(username));
-        })
+        .filter((user) => !isExcludedLegacyOrTestAccount(user))
         .map(normalizeUserAccount)
       : structuredClone(defaultAuth.users);
     return {
@@ -4030,6 +4102,22 @@ function isValidPhilippineContactNumber(value) {
   return /^\+63\d{10}$/.test(String(value ?? "").trim());
 }
 
+function isExcludedLegacyOrTestAccount(user) {
+  const id = String(user?.id ?? "");
+  const usernames = (Array.isArray(user?.usernames) ? user.usernames : [user?.username].filter(Boolean))
+    .map((value) => String(value));
+  const name = String(user?.name ?? "");
+  const removableSeedUsernames = ["admin", "medward", "medwardhead", "medwardadmin", "medwardmember1", "medwardmember2", "medwardvisitor"];
+  const testPattern = /test(head|assistant|primary|officer|member)$/i;
+
+  return Boolean(
+    user?.isTemporary
+    || id.startsWith("temp-")
+    || usernames.some((username) => removableSeedUsernames.includes(username) || testPattern.test(username))
+    || testPattern.test(name)
+  );
+}
+
 function normalizeUserAccount(user) {
   const usernames = Array.isArray(user.usernames) && user.usernames.length > 0
     ? user.usernames
@@ -4248,7 +4336,7 @@ function syncRemoteUserLocally(remoteUser, options = {}) {
     return null;
   }
 
-  if (getUsernames(normalized).includes("admin")) {
+  if (getUsernames(normalized).includes("admin") || isExcludedLegacyOrTestAccount(normalized)) {
     return null;
   }
 
