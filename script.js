@@ -47,59 +47,6 @@ const defaultMinistries = [
   "Ushers"
 ];
 
-const temporaryMinistryTestAccounts = [
-  { id: "temp-adonai-head", name: "Adonai Test Head", username: "AdonaiTestHead", ministry: "Adonai", ministryRole: "ministryHead" },
-  { id: "temp-adonai-assistant", name: "Adonai Test Assistant", username: "AdonaiTestAssistant", ministry: "Adonai", ministryRole: "ministryAssistant" },
-  { id: "temp-adonai-primary", name: "Adonai Test Primary", username: "AdonaiTestPrimary", ministry: "Adonai", ministryRole: "ministryPrimaryLeader" },
-  { id: "temp-adonai-officer", name: "Adonai Test Officer", username: "AdonaiTestOfficer", ministry: "Adonai", ministryRole: "ministryOfficer" },
-  { id: "temp-adonai-member", name: "Adonai Test Member", username: "AdonaiTestMember", ministry: "Adonai", ministryRole: "ministryMember" },
-  { id: "temp-hamakom-head", name: "Hamakom Test Head", username: "HamakomTestHead", ministry: "Hamakom", ministryRole: "ministryHead" },
-  { id: "temp-hamakom-assistant", name: "Hamakom Test Assistant", username: "HamakomTestAssistant", ministry: "Hamakom", ministryRole: "ministryAssistant" },
-  { id: "temp-hamakom-primary", name: "Hamakom Test Primary", username: "HamakomTestPrimary", ministry: "Hamakom", ministryRole: "ministryPrimaryLeader" },
-  { id: "temp-hamakom-officer", name: "Hamakom Test Officer", username: "HamakomTestOfficer", ministry: "Hamakom", ministryRole: "ministryOfficer" },
-  { id: "temp-hamakom-member", name: "Hamakom Test Member", username: "HamakomTestMember", ministry: "Hamakom", ministryRole: "ministryMember" },
-  { id: "temp-agape-head", name: "Agape Test Head", username: "AgapeTestHead", ministry: "Agape", ministryRole: "ministryHead" },
-  { id: "temp-agape-assistant", name: "Agape Test Assistant", username: "AgapeTestAssistant", ministry: "Agape", ministryRole: "ministryAssistant" },
-  { id: "temp-agape-primary", name: "Agape Test Primary", username: "AgapeTestPrimary", ministry: "Agape", ministryRole: "ministryPrimaryLeader" },
-  { id: "temp-agape-officer", name: "Agape Test Officer", username: "AgapeTestOfficer", ministry: "Agape", ministryRole: "ministryOfficer" },
-  { id: "temp-agape-member", name: "Agape Test Member", username: "AgapeTestMember", ministry: "Agape", ministryRole: "ministryMember" },
-  { id: "temp-dance-head", name: "Dance Test Head", username: "DanceTestHead", ministry: "Dance", ministryRole: "ministryHead" },
-  { id: "temp-dance-assistant", name: "Dance Test Assistant", username: "DanceTestAssistant", ministry: "Dance", ministryRole: "ministryAssistant" },
-  { id: "temp-dance-primary", name: "Dance Test Primary", username: "DanceTestPrimary", ministry: "Dance", ministryRole: "ministryPrimaryLeader" },
-  { id: "temp-dance-officer", name: "Dance Test Officer", username: "DanceTestOfficer", ministry: "Dance", ministryRole: "ministryOfficer" },
-  { id: "temp-dance-member", name: "Dance Test Member", username: "DanceTestMember", ministry: "Dance", ministryRole: "ministryMember" },
-  { id: "temp-emcee-head", name: "Emcee Test Head", username: "EmceeTestHead", ministry: "Emcee", ministryRole: "ministryHead" },
-  { id: "temp-emcee-assistant", name: "Emcee Test Assistant", username: "EmceeTestAssistant", ministry: "Emcee", ministryRole: "ministryAssistant" },
-  { id: "temp-emcee-primary", name: "Emcee Test Primary", username: "EmceeTestPrimary", ministry: "Emcee", ministryRole: "ministryPrimaryLeader" },
-  { id: "temp-emcee-officer", name: "Emcee Test Officer", username: "EmceeTestOfficer", ministry: "Emcee", ministryRole: "ministryOfficer" },
-  { id: "temp-emcee-member", name: "Emcee Test Member", username: "EmceeTestMember", ministry: "Emcee", ministryRole: "ministryMember" },
-  { id: "temp-info-head", name: "Info Test Head", username: "InfoTestHead", ministry: "Info", ministryRole: "ministryHead" },
-  { id: "temp-info-assistant", name: "Info Test Assistant", username: "InfoTestAssistant", ministry: "Info", ministryRole: "ministryAssistant" },
-  { id: "temp-info-primary", name: "Info Test Primary", username: "InfoTestPrimary", ministry: "Info", ministryRole: "ministryPrimaryLeader" },
-  { id: "temp-info-officer", name: "Info Test Officer", username: "InfoTestOfficer", ministry: "Info", ministryRole: "ministryOfficer" },
-  { id: "temp-info-member", name: "Info Test Member", username: "InfoTestMember", ministry: "Info", ministryRole: "ministryMember" },
-  { id: "temp-pastoral-head", name: "Pastoral Test Head", username: "PastoralTestHead", ministry: "Pastoral", ministryRole: "ministryHead" },
-  { id: "temp-pastoral-assistant", name: "Pastoral Test Assistant", username: "PastoralTestAssistant", ministry: "Pastoral", ministryRole: "ministryAssistant" },
-  { id: "temp-pastoral-primary", name: "Pastoral Test Primary", username: "PastoralTestPrimary", ministry: "Pastoral", ministryRole: "ministryPrimaryLeader" },
-  { id: "temp-pastoral-officer", name: "Pastoral Test Officer", username: "PastoralTestOfficer", ministry: "Pastoral", ministryRole: "ministryOfficer" },
-  { id: "temp-pastoral-member", name: "Pastoral Test Member", username: "PastoralTestMember", ministry: "Pastoral", ministryRole: "ministryMember" },
-  { id: "temp-tech-head", name: "Tech Test Head", username: "TechTestHead", ministry: "Tech", ministryRole: "ministryHead" },
-  { id: "temp-tech-assistant", name: "Tech Test Assistant", username: "TechTestAssistant", ministry: "Tech", ministryRole: "ministryAssistant" },
-  { id: "temp-tech-primary", name: "Tech Test Primary", username: "TechTestPrimary", ministry: "Tech", ministryRole: "ministryPrimaryLeader" },
-  { id: "temp-tech-officer", name: "Tech Test Officer", username: "TechTestOfficer", ministry: "Tech", ministryRole: "ministryOfficer" },
-  { id: "temp-tech-member", name: "Tech Test Member", username: "TechTestMember", ministry: "Tech", ministryRole: "ministryMember" },
-  { id: "temp-ushers-head", name: "Ushers Test Head", username: "UshersTestHead", ministry: "Ushers", ministryRole: "ministryHead" },
-  { id: "temp-ushers-assistant", name: "Ushers Test Assistant", username: "UshersTestAssistant", ministry: "Ushers", ministryRole: "ministryAssistant" },
-  { id: "temp-ushers-primary", name: "Ushers Test Primary", username: "UshersTestPrimary", ministry: "Ushers", ministryRole: "ministryPrimaryLeader" },
-  { id: "temp-ushers-officer", name: "Ushers Test Officer", username: "UshersTestOfficer", ministry: "Ushers", ministryRole: "ministryOfficer" },
-  { id: "temp-ushers-member", name: "Ushers Test Member", username: "UshersTestMember", ministry: "Ushers", ministryRole: "ministryMember" },
-  { id: "temp-paw-head", name: "PAW Test Head", username: "PraiseAndWorshipTestHead", ministry: "Praise And Worship Team", ministryRole: "ministryHead" },
-  { id: "temp-paw-assistant", name: "PAW Test Assistant", username: "PraiseAndWorshipTestAssistant", ministry: "Praise And Worship Team", ministryRole: "ministryAssistant" },
-  { id: "temp-paw-primary", name: "PAW Test Primary", username: "PraiseAndWorshipTestPrimary", ministry: "Praise And Worship Team", ministryRole: "ministryPrimaryLeader" },
-  { id: "temp-paw-officer", name: "PAW Test Officer", username: "PraiseAndWorshipTestOfficer", ministry: "Praise And Worship Team", ministryRole: "ministryOfficer" },
-  { id: "temp-paw-member", name: "PAW Test Member", username: "PraiseAndWorshipTestMember", ministry: "Praise And Worship Team", ministryRole: "ministryMember" }
-];
-
 const defaultState = {
   registries: {
     worshipLeaders: [],
@@ -198,22 +145,7 @@ const defaultAuth = {
     ],
     ministries: [],
     profile: {}
-  },
-  ...temporaryMinistryTestAccounts.map((account) => ({
-    id: account.id,
-    name: account.name,
-    username: account.username,
-    usernames: [account.username],
-    password: "",
-    role: "member",
-    isCreator: false,
-    isTemporary: true,
-    titles: [
-      { scope: "ministry", role: account.ministryRole, ministry: account.ministry }
-    ],
-    ministries: [account.ministry],
-    profile: {}
-  }))],
+  }],
   pending: [],
   ministryRequests: [],
   ministries: defaultMinistries
@@ -3031,13 +2963,17 @@ function loadAuthState() {
   try {
     const parsed = JSON.parse(saved);
     const users = Array.isArray(parsed.users) && parsed.users.length > 0
-      ? parsed.users.map(normalizeUserAccount)
+      ? parsed.users
+        .filter((user) => !user?.isTemporary && !String(user?.id ?? "").startsWith("temp-"))
+        .map(normalizeUserAccount)
       : structuredClone(defaultAuth.users);
     return {
       users: ensureSeedAccounts(users),
       pending: Array.isArray(parsed.pending) ? parsed.pending : [],
       ministryRequests: Array.isArray(parsed.ministryRequests) ? parsed.ministryRequests : [],
-      ministries: Array.isArray(parsed.ministries) && parsed.ministries.length > 0 ? sortEntries(parsed.ministries) : [...defaultMinistries]
+      ministries: Array.isArray(parsed.ministries) && parsed.ministries.length > 0
+        ? sortEntries([...new Set([...parsed.ministries, ...defaultMinistries])])
+        : [...defaultMinistries]
     };
   } catch (error) {
     console.warn("Could not parse auth state. Restoring defaults.", error);
