@@ -86,8 +86,53 @@ code {
 
 .auth-intro {
   display: grid;
-  align-content: start;
-  gap: 18px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
+.auth-logo-shell {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.auth-logo {
+  display: block;
+  width: min(100%, 520px);
+  height: auto;
+  object-fit: contain;
+  transition: transform 260ms ease, filter 260ms ease, opacity 260ms ease;
+  transform-origin: center;
+  filter: brightness(0.88) contrast(1.04);
+}
+
+.auth-logo-shine {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  filter: sepia(1) saturate(7.2) hue-rotate(-10deg) brightness(1.55) contrast(1.18);
+  clip-path: inset(0 100% 0 -32%);
+  transition: opacity 160ms ease, clip-path 480ms ease;
+  mix-blend-mode: screen;
+}
+
+.auth-logo-shell:hover .auth-logo {
+  transform: translateY(-4px) scale(1.025);
+  filter: brightness(0.88) contrast(1.04) drop-shadow(0 16px 28px rgba(0, 0, 0, 0.26));
+}
+
+.auth-logo-shell:hover .auth-logo-shine {
+  opacity: 1;
+  clip-path: inset(0 -32% 0 100%);
 }
 
 .eyebrow,
@@ -554,7 +599,7 @@ code {
   text-transform: uppercase;
   cursor: pointer;
   box-shadow: 0 22px 50px rgba(10, 28, 19, 0.32);
-  transition: transform 240ms ease, box-shadow 240ms ease, border-color 240ms ease;
+  transition: transform 260ms ease, box-shadow 260ms ease, border-color 260ms ease, filter 260ms ease;
 }
 
 .reserve-seat-btn::before {
@@ -569,9 +614,10 @@ code {
 
 .reserve-seat-btn:hover,
 .reserve-seat-btn:focus-visible {
-  transform: translateY(-3px) scale(1.01);
+  transform: translateY(-4px) scale(1.025);
   border-color: rgba(184, 255, 212, 0.54);
   box-shadow: 0 28px 56px rgba(9, 25, 18, 0.42);
+  filter: brightness(1.04);
 }
 
 .reserve-seat-btn:hover::before,

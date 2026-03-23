@@ -438,6 +438,7 @@ const sectionTemplate = document.querySelector("#service-section-template");
 const registryForm = document.querySelector("#registry-form");
 const registryType = document.querySelector("#registry-type");
 const registryName = document.querySelector("#registry-name");
+const pullPawProfilesButton = document.querySelector("#pull-paw-profiles-btn");
 const registryGroups = document.querySelector("#registry-groups");
 const registryCard = document.querySelector("#registry-card");
 const pastorRequestForm = document.querySelector("#pastor-request-form");
@@ -560,6 +561,7 @@ function initializeApp() {
     });
   });
   registryForm.addEventListener("submit", handleRegistrySubmit);
+  pullPawProfilesButton.addEventListener("click", pullPawProfilesIntoRegistry);
   pastorRequestForm.addEventListener("submit", handlePastorRequestSubmit);
   personScheduleForm.addEventListener("submit", handlePersonScheduleSubmit);
   saveAdonaiButton.addEventListener("click", () => exportRangePdf(pdfStartDateInput.value, pdfRangeMonthsSelect.value, "saturday"));
@@ -1000,6 +1002,20 @@ function handleRegistrySubmit(event) {
   }
   addRegistryItem(registryType.value, registryName.value);
   registryName.value = "";
+}
+
+function pullPawProfilesIntoRegistry() {
+  if (!canEditOrganizer()) {
+    return;
+  }
+
+  const synced = getPawProfileRegistryNames();
+  Object.keys(registryMeta).forEach((key) => {
+    state.registries[key] = sortEntries([...new Set([...(state.registries[key] ?? []), ...(synced[key] ?? [])])]);
+  });
+  persistOrganizer();
+  organizerModeNote.textContent = "PAW profiles pulled into the registry.";
+  renderOrganizer();
 }
 
 function handlePastorRequestSubmit(event) {
@@ -2200,6 +2216,7 @@ function resetManagedAccountPassword(accountId) {
 }
 
 function renderOrganizer() {
+  const syncedRegistry = getPawProfileRegistryNames();
   syncCurrentServicesToHistory();
   if (!pdfStartDateInput.value) {
     pdfStartDateInput.value = getEarliestKnownDate() || normalizeDate(new Date().toISOString().slice(0, 10));
@@ -2210,26 +2227,29 @@ function renderOrganizer() {
   registryType.disabled = !editingEnabled;
   registryName.disabled = !editingEnabled;
   registryForm.querySelector("button").disabled = !editingEnabled;
+  pullPawProfilesButton.disabled = !editingEnabled;
   pastorRequestName.disabled = !editingEnabled;
   pastorRequestForm.querySelector("button").disabled = !editingEnabled;
   resetDemoButton.disabled = !editingEnabled;
-  organizerModeNote.textContent = canEditOrganizer()
-    ? "Admin mode is active. Editing is enabled for the PAW Schedule."
-    : "You are in view mode. Turn on Admin to edit the PAW Schedule.";
-  renderRegistryGroups();
+  if (!organizerModeNote.textContent || organizerModeNote.textContent.includes("PAW profiles pulled")) {
+    organizerModeNote.textContent = canEditOrganizer()
+      ? "Admin mode is active. Editing is enabled for the PAW Schedule."
+      : "You are in view mode. Turn on Admin to edit the PAW Schedule.";
+  }
+  renderRegistryGroups(syncedRegistry);
   renderPastorRequests();
   renderPersonScheduleControls();
   renderPersonScheduleResults();
   renderServices();
 }
 
-function renderRegistryGroups() {
+function renderRegistryGroups(syncedRegistry = getPawProfileRegistryNames()) {
   registryGroups.innerHTML = "";
 
   Object.entries(registryMeta).forEach(([key, label]) => {
     const group = document.createElement("article");
     group.className = "registry-group";
-    const items = state.registries[key];
+    const items = getEffectiveRegistryEntries(key, syncedRegistry);
 
     group.innerHTML = `
       <h3>${escapeHtml(label)}</h3>
@@ -2350,6 +2370,7 @@ function renderPersonScheduleResults() {
 function renderServices() {
   serviceSections.innerHTML = "";
   const editingEnabled = canEditOrganizer();
+  const syncedRegistry = getPawProfileRegistryNames();
 
   Object.values(state.services).forEach((service) => {
     const section = sectionTemplate.content.firstElementChild.cloneNode(true);
@@ -2359,9 +2380,9 @@ function renderServices() {
     section.querySelector(".export-service-btn").addEventListener("click", () => exportRangePdf(service.date || pdfStartDateInput.value, 1, service.id));
 
     bindServiceDateSelect(section, service);
-    bindRoleSelect(section, service, ".worshipLeader", state.registries.worshipLeaders);
-    bindBackupMultiSelect(section, service);
-    bindMusicianMultiSelect(section, service, Infinity, ".musicians-options", ".musicians-selected", ".multi-summary");
+    bindRoleSelect(section, service, ".worshipLeader", getEffectiveRegistryEntries("worshipLeaders", syncedRegistry));
+    bindBackupMultiSelect(section, service, syncedRegistry);
+    bindMusicianMultiSelect(section, service, Infinity, ".musicians-options", ".musicians-selected", ".multi-summary", syncedRegistry);
     updateConflictDisplay(section, service);
     applyOrganizerPermissions(section, editingEnabled);
 
@@ -2451,12 +2472,12 @@ function bindRoleSelect(section, service, selector, options) {
   });
 }
 
-function bindBackupMultiSelect(section, service) {
-  bindLimitedMultiSelect(section, service, "backup", getBackupOptions(), Infinity, ".backups-options", ".backups-selected", ".backup-summary", "Select backups", "backup", true);
+function bindBackupMultiSelect(section, service, syncedRegistry = getPawProfileRegistryNames()) {
+  bindLimitedMultiSelect(section, service, "backup", getBackupOptions(syncedRegistry), Infinity, ".backups-options", ".backups-selected", ".backup-summary", "Select backups", "backup", true);
 }
 
-function bindMusicianMultiSelect(section, service, limit, optionsSelector, selectedSelector, summarySelector) {
-  bindLimitedMultiSelect(section, service, "musicians", getAssignableNames(state.registries.musicians), limit, optionsSelector, selectedSelector, summarySelector, "Select musicians", "musician", false);
+function bindMusicianMultiSelect(section, service, limit, optionsSelector, selectedSelector, summarySelector, syncedRegistry = getPawProfileRegistryNames()) {
+  bindLimitedMultiSelect(section, service, "musicians", getAssignableNames(getEffectiveRegistryEntries("musicians", syncedRegistry)), limit, optionsSelector, selectedSelector, summarySelector, "Select musicians", "musician", false);
 }
 
 function bindLimitedMultiSelect(section, service, key, options, limit, optionsSelector, selectedSelector, summarySelector, emptyLabel, unitLabel, rerenderOnChange) {
@@ -2522,12 +2543,53 @@ function bindLimitedMultiSelect(section, service, key, options, limit, optionsSe
   updateSelectedItems(selectedWrap, summary, service[key], emptyLabel, unitLabel);
 }
 
-function getBackupOptions() {
-  return getAssignableNames(sortEntries([...new Set([...state.registries.worshipLeaders, ...state.registries.backups])]));
+function getBackupOptions(syncedRegistry = getPawProfileRegistryNames()) {
+  return getAssignableNames(sortEntries([...new Set([
+    ...getEffectiveRegistryEntries("worshipLeaders", syncedRegistry),
+    ...getEffectiveRegistryEntries("backups", syncedRegistry)
+  ])]));
 }
 
 function getAllRegistryPeople() {
-  return sortEntries([...new Set(Object.values(state.registries).flat())]);
+  const syncedRegistry = getPawProfileRegistryNames();
+  return sortEntries([...new Set(Object.keys(registryMeta).flatMap((key) => getEffectiveRegistryEntries(key, syncedRegistry)))]);
+}
+
+function getEffectiveRegistryEntries(type, syncedRegistry = getPawProfileRegistryNames()) {
+  return sortEntries([...new Set([...(state.registries[type] ?? []), ...(syncedRegistry[type] ?? [])])]);
+}
+
+function getPawProfileRegistryNames() {
+  const derived = {
+    worshipLeaders: [],
+    musicians: []
+  };
+
+  authState.users.forEach((user) => {
+    const pawRole = getPawMinistryRole(user);
+    if (!pawRole) {
+      return;
+    }
+
+    const displayName = (user.name || user.username || "").trim();
+    if (!displayName || isInDaList(displayName)) {
+      return;
+    }
+
+    if (["ministryHead", "ministryAssistant", "ministryPrimaryLeader"].includes(pawRole)) {
+      derived.worshipLeaders.push(displayName);
+    }
+  });
+
+  return Object.fromEntries(
+    Object.keys(registryMeta).map((key) => [key, sortEntries([...new Set(derived[key] ?? [])])])
+  );
+}
+
+function getPawMinistryRole(user) {
+  return (Array.isArray(user?.titles) ? user.titles : []).find((title) =>
+    title.scope === "ministry" && title.ministry === "Praise And Worship Team"
+  )?.role || "";
 }
 
 function getAssignableNames(names) {
