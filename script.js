@@ -82,10 +82,10 @@ const defaultAuth = {
     username: "RCB",
     usernames: ["RCB"],
     password: "RCB",
-    role: "member",
+    role: "headAdmin",
     isCreator: false,
     titles: [
-      { scope: "general", role: "churchMember", ministry: "" }
+      { scope: "platform", role: "headAdmin", ministry: "" }
     ],
     ministries: [],
     profile: {}
@@ -1271,7 +1271,7 @@ function renderProfile() {
   profilePhotoForm.classList.toggle("app-hidden", !profileEditMode);
   profileMinistryForm.classList.toggle("app-hidden", !profileEditMode);
   profilePasswordCard.classList.toggle("app-hidden", !profileEditMode);
-  profileMinistryManager.classList.toggle("app-hidden", !(profileEditMode && (isCreator() || hasAdminAccess())));
+  profileMinistryManager.classList.toggle("app-hidden", !(profileEditMode && canManageMinistryAssignments()));
 }
 
 function renderProfileMinistries() {
@@ -1595,7 +1595,7 @@ function handlePasswordChange(event) {
 function handleCreateMinistry(event) {
   event.preventDefault();
 
-  if (!(isCreator() || hasAdminAccess())) {
+  if (!canManageMinistryAssignments()) {
     return;
   }
 
@@ -3914,7 +3914,7 @@ function canManageUserMinistry(targetUser, ministry) {
     return false;
   }
 
-  if (isCreator() || ["headAdmin", "admin"].includes(currentUser.role)) {
+  if (canManageMinistryAssignments()) {
     return true;
   }
 
@@ -3923,6 +3923,10 @@ function canManageUserMinistry(targetUser, ministry) {
     && title.ministry === ministry
     && title.role === "ministryHead"
   );
+}
+
+function canManageMinistryAssignments() {
+  return Boolean(currentUser && (isCreator() || currentUser.role === "headAdmin"));
 }
 
 function cssEscape(value) {
