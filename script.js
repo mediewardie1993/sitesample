@@ -400,6 +400,7 @@ let carouselScrollPauseTimer = null;
 let profileEditMode = false;
 let lastProfileSearchTerm = "";
 let pendingSeatSelections = [];
+let adminUserSyncInFlight = false;
 
 const carouselRefs = {
   sunday: { slide: homeCarouselSlide, dots: homeCarouselDots, prev: homeCarouselPrev, next: homeCarouselNext },
@@ -2003,8 +2004,10 @@ function renderAdmin() {
   }
 
   if (fullAdmin) {
+    syncAdminUsersFromSupabase();
     authState.users
       .filter((account) => canViewManagedAccount(account))
+      .sort(sortManagedAccountsByNewest)
       .forEach((account) => {
       const lockedPrivilegedAccount = isPrivilegedRole(account.role) && !isCreator();
       const allowedRoles = getAssignableAccountRoles(account);
@@ -3456,6 +3459,7 @@ function normalizeRemoteUserAccount(user, options = {}) {
     username: user.username || "",
     usernames: [user.username].filter(Boolean),
     password: options.password ?? "",
+    createdAt: user.createdAt || user.created_at || new Date().toISOString(),
     role: user.role || "member",
     isCreator: Boolean(user.isCreator),
     titles: Array.isArray(user.titles) ? user.titles : inferTitlesFromLegacyUser({ role: user.role || "member" }),
@@ -3469,6 +3473,32 @@ function normalizeRemoteUserAccount(user, options = {}) {
       photo: user.profile?.photo || ""
     }
   });
+}
+
+async function listSupabaseUsersForAdmin() {
+  return callSupabaseRpc("list_users_admin", {});
+}
+
+async function syncAdminUsersFromSupabase() {
+  if (!hasAdminAccess() || adminUserSyncInFlight) {
+    return;
+  }
+
+  adminUserSyncInFlight = true;
+  try {
+    const result = await listSupabaseUsersForAdmin();
+    const users = Array.isArray(result?.users) ? result.users : [];
+    if (!users.length) {
+      return;
+    }
+
+    users.forEach((user) => syncRemoteUserLocally(user));
+    if (adminMode && activeSection === "admin") {
+      renderAdmin();
+    }
+  } finally {
+    adminUserSyncInFlight = false;
+  }
 }
 
 function syncRemoteUserLocally(remoteUser, options = {}) {
@@ -4168,6 +4198,17 @@ function formatAccountSummary(account) {
   return account.titles.map(formatTitleLabel).join(", ");
 }
 
+function sortManagedAccountsByNewest(left, right) {
+  const leftTime = Date.parse(left?.createdAt || "");
+  const rightTime = Date.parse(right?.createdAt || "");
+
+  if (Number.isFinite(leftTime) || Number.isFinite(rightTime)) {
+    return (Number.isFinite(rightTime) ? rightTime : 0) - (Number.isFinite(leftTime) ? leftTime : 0);
+  }
+
+  return (left?.name || left?.username || "").localeCompare(right?.name || right?.username || "");
+}
+
 function getPendingMinistryRequestsForUser(userId) {
   return (authState.ministryRequests ?? []).filter((request) => request.userId === userId);
 }
@@ -4268,7 +4309,7 @@ function canManageUserMinistry(targetUser, ministry) {
 }
 
 function canManageMinistryAssignments() {
-  return Boolean(currentUser && (isCreator() || currentUser.role === "headAdmin"));
+  return Boolean(currentUser && (isCreator() || ["headAdmin", "admin"].includes(currentUser.role)));
 }
 
 function cssEscape(value) {
