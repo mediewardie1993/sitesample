@@ -1441,11 +1441,22 @@ function renderProfileSearchResults() {
 
   matches.forEach((user) => {
     const contactOnly = ["headAdmin", "admin"].includes(user.role);
+    const photoSource = user.profile?.photoData || user.profile?.photo || "";
+    const fallbackLabel = escapeHtml((user.name || user.username || "?").trim().charAt(0).toUpperCase() || "?");
     const card = document.createElement("article");
     card.className = "person-schedule-card";
     card.innerHTML = `
-      <strong>${escapeHtml(user.name || user.username)}</strong>
-      <div class="person-schedule-meta">@${escapeHtml(user.username || "")}</div>
+      <div class="person-schedule-head">
+        <div class="person-schedule-avatar-shell">
+          ${photoSource
+            ? `<img class="person-schedule-avatar" src="${escapeHtml(photoSource)}" alt="${escapeHtml(user.name || user.username || "Profile")}">`
+            : `<div class="person-schedule-avatar-fallback">${fallbackLabel}</div>`}
+        </div>
+        <div class="person-schedule-head-copy">
+          <strong>${escapeHtml(user.name || user.username)}</strong>
+          <div class="person-schedule-meta">@${escapeHtml(user.username || "")}</div>
+        </div>
+      </div>
       ${contactOnly
         ? `
           <div>Contact Number: ${escapeHtml(user.profile?.contactNumber || "-")}</div>
