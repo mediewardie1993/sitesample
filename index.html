@@ -94,16 +94,9 @@
     <nav class="site-nav shell-card">
       <button class="nav-btn nav-btn-active" data-section="home" type="button">Home</button>
       <button class="nav-btn" data-section="profile" type="button">Profile</button>
-      <button class="nav-btn" data-section="adonai" type="button">Adonai</button>
-      <button class="nav-btn" data-section="hamakom" type="button">Hamakom</button>
-      <button class="nav-btn" data-section="agape" type="button">Agape</button>
-      <button class="nav-btn" data-section="dance" type="button">Dance</button>
-      <button class="nav-btn" data-section="kids" type="button">Kids</button>
-      <button class="nav-btn" data-section="photos" type="button">Photos</button>
-      <button class="nav-btn" data-section="organizer" type="button">PAW Schedule</button>
-      <button class="nav-btn" data-section="seats" type="button">Seats</button>
-      <button class="nav-btn" data-section="search" type="button">Search Profile</button>
+      <button class="nav-btn" data-section="ministries" type="button">Ministries</button>
       <button class="nav-btn" data-section="about" type="button">About Us</button>
+      <button class="nav-btn" data-section="search" type="button">Search Profile</button>
       <button id="admin-nav-btn" class="nav-btn app-hidden" data-section="admin" type="button">Admin</button>
     </nav>
 
@@ -159,7 +152,7 @@
         <article id="reserve-seat-layout-card" class="shell-card reserve-seat-layout-card">
           <div class="section-heading">
             <div>
-              <p class="mini-label">Ushers</p>
+              <p class="mini-label">Ushering</p>
               <h2>Seat Layout Preview</h2>
             </div>
           </div>
@@ -306,8 +299,6 @@
                 <select id="profile-ministry-select"></select>
                 <select id="profile-ministry-role">
                   <option value="ministryMember" selected>Ministry Member</option>
-                  <option value="ministryOfficer">Ministry Officer</option>
-                  <option value="ministryPrimaryLeader">Primary Leader</option>
                   <option value="ministryAssistant">Ministry Assistant Head</option>
                   <option value="ministryHead">Ministry Head</option>
                 </select>
@@ -363,6 +354,18 @@
             </form>
             <p id="create-ministry-message" class="auth-message"></p>
           </section>
+        </article>
+      </section>
+
+      <section id="section-ministries" class="page-section app-hidden">
+        <article class="shell-card">
+          <div class="section-heading">
+            <div>
+              <p class="mini-label">Ministries</p>
+              <h2>Ministry Directory</h2>
+            </div>
+          </div>
+          <div id="ministries-list" class="person-schedule-results"></div>
         </article>
       </section>
 
@@ -702,7 +705,7 @@
         <header class="hero shell-card">
           <div class="hero-main">
             <div>
-              <p class="eyebrow">PAW Schedule</p>
+              <p class="eyebrow">Worship Team</p>
               <h1>Plan Adonai and Sunday assignments</h1>
             </div>
           </div>
@@ -746,7 +749,7 @@
               </select>
               <input id="registry-name" type="text" placeholder="Add a name" autocomplete="off">
               <button class="secondary-btn" type="submit">Add</button>
-              <button id="pull-paw-profiles-btn" class="ghost-btn" type="button">Pull from PAW Profiles</button>
+              <button id="pull-paw-profiles-btn" class="ghost-btn" type="button">Pull from Worship Team Profiles</button>
             </form>
             <p id="organizer-mode-note" class="mode-note"></p>
 

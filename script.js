@@ -38,18 +38,35 @@ const registrationRoleLabels = {
   visitor: "Visitor"
 };
 
+const ministryNameAliases = {
+  "Praise And Worship Team": "Worship Team",
+  "Info": "Info (3 branches)",
+  "Tech": "Sound Technology",
+  "Ushers": "Ushering"
+};
+
 const defaultMinistries = [
-  "Praise And Worship Team",
+  "Admin",
   "Adonai",
-  "Hamakom",
   "Agape",
+  "Bible Education",
+  "Cell Management",
   "Dance",
-  "Kids",
   "Emcee",
-  "Info",
-  "Pastoral",
-  "Tech",
-  "Ushers"
+  "Events Dev",
+  "Faith Journey",
+  "Finance (tagabilang)",
+  "Hesed",
+  "Human Resources",
+  "Info (3 branches)",
+  "Kids",
+  "Marshals",
+  "Otherside",
+  "Resourcing",
+  "Sound Technology",
+  "Stage Management",
+  "Ushering",
+  "Worship Team"
 ];
 
 const defaultState = {
@@ -116,7 +133,7 @@ const defaultAuth = {
 };
 
 const announcementBoardMeta = {
-  home: { label: "Home", ministry: "Emcee", grantMinistries: ["Emcee", "Info"] },
+  home: { label: "Home", ministry: "Emcee", grantMinistries: ["Emcee", "Info (3 branches)"] },
   adonai: { label: "Adonai", ministry: "Adonai", grantMinistries: ["Adonai"] },
   hamakom: { label: "Hamakom", ministry: "Hamakom", grantMinistries: ["Hamakom"] },
   agape: { label: "Agape", ministry: "Agape", grantMinistries: ["Agape"] },
@@ -185,7 +202,7 @@ const photoSectionMeta = {
   kids: { label: "Kids", pageSection: "kids" }
 };
 
-const sectionIds = ["home", "seats", "profile", "search", "photos", "adonai", "hamakom", "agape", "dance", "kids", "about", "organizer", "admin"];
+const sectionIds = ["home", "seats", "profile", "ministries", "search", "about", "organizer", "admin"];
 
 const loginGate = document.querySelector("#login-gate");
 const appShell = document.querySelector("#app-shell");
@@ -233,6 +250,7 @@ const profileMinistryRequests = document.querySelector("#profile-ministry-reques
 const profileSearchForm = document.querySelector("#profile-search-form");
 const profileSearchInput = document.querySelector("#profile-search-input");
 const profileSearchResults = document.querySelector("#profile-search-results");
+const ministriesList = document.querySelector("#ministries-list");
 const changePasswordForm = document.querySelector("#change-password-form");
 const currentPasswordInput = document.querySelector("#current-password");
 const newPasswordInput = document.querySelector("#new-password");
@@ -719,7 +737,7 @@ function renderSeatLayout() {
       ? "No approved seat event is available yet."
       : canManage
         ? "You can approve requests and update seat status for this event."
-        : "You can select available seats for this event, then confirm your request. Only Ushers Head, Ushers Assistant Head, and upper admins can approve seats.";
+        : "You can select available seats for this event, then confirm your request. Only Ushering Head, Ushering Assistant Head, and upper admins can approve seats.";
   }
   seatAdminActions.classList.toggle("app-hidden", !canManage);
   seatAdminMessage.classList.toggle("app-hidden", !canManage);
@@ -1136,7 +1154,7 @@ function pullPawProfilesIntoRegistry() {
     state.registries[key] = sortEntries([...new Set([...(state.registries[key] ?? []), ...(synced[key] ?? [])])]);
   });
   persistOrganizer();
-  organizerModeNote.textContent = "PAW profiles pulled into the registry.";
+  organizerModeNote.textContent = "Worship Team profiles pulled into the registry.";
   renderOrganizer();
 }
 
@@ -1423,6 +1441,7 @@ function renderApp() {
   renderSections();
   renderSeatLayout();
   renderProfile();
+  renderMinistriesPage();
   renderPhotos();
   renderOrganizer();
   renderAdmin();
@@ -1489,6 +1508,40 @@ function renderProfile() {
   profilePasswordCard.classList.toggle("app-hidden", !profileEditMode);
   profileUsernameCard.classList.toggle("app-hidden", !profileEditMode);
   profileMinistryManager.classList.toggle("app-hidden", !(profileEditMode && canManageMinistryAssignments()));
+}
+
+function renderMinistriesPage() {
+  if (!ministriesList) {
+    return;
+  }
+
+  const sortedMinistries = sortEntries(authState.ministries ?? []);
+  ministriesList.innerHTML = "";
+
+  sortedMinistries.forEach((ministry) => {
+    const card = document.createElement("article");
+    card.className = "managed-ministry-row ministry-card";
+
+    const isWorshipTeam = ministry === "Worship Team";
+    card.innerHTML = `
+      <div class="ministry-card-head">
+        <strong>${escapeHtml(ministry)}</strong>
+      </div>
+      <p class="ministry-card-copy">${isWorshipTeam ? "Open the worship schedule and assignments here." : "This ministry page is blank for now."}</p>
+      ${isWorshipTeam ? `<button class="secondary-btn ministry-open-btn" type="button">Open Worship Team</button>` : ""}
+    `;
+
+    const openButton = card.querySelector(".ministry-open-btn");
+    if (openButton) {
+      openButton.addEventListener("click", () => {
+        activeSection = "organizer";
+        renderSections();
+        renderOrganizer();
+      });
+    }
+
+    ministriesList.appendChild(card);
+  });
 }
 
 function renderProfileMinistries() {
@@ -1561,6 +1614,14 @@ function renderProfileUsernameRequests() {
     card.querySelector(".profile-request-remove").addEventListener("click", () => removeUsernameChangeRequest(request.id));
     profileUsernameRequests.appendChild(card);
   });
+}
+
+function getSelectableMinistryRoleEntries() {
+  return [
+    ["ministryMember", registrationRoleLabels.ministryMember],
+    ["ministryAssistant", registrationRoleLabels.ministryAssistant],
+    ["ministryHead", registrationRoleLabels.ministryHead]
+  ];
 }
 
 function renderProfileSearchResults() {
@@ -1651,8 +1712,7 @@ function renderSearchProfileMinistries(user) {
     const roleValue = getMinistryRoleValue(user, ministry);
     const roleLabel = getMinistryRoleLabel(user, ministry);
     const canManage = canManageUserMinistry(user, ministry);
-    const options = Object.entries(registrationRoleLabels)
-      .filter(([value]) => requiresMinistry(value))
+    const options = getSelectableMinistryRoleEntries()
       .map(([value, label]) => `<option value="${value}" ${roleValue === value ? "selected" : ""}>${escapeHtml(label)}</option>`)
       .join("");
 
@@ -1683,8 +1743,7 @@ function renderSearchProfileMinistries(user) {
           ${availableMinistries.map((ministry) => `<option value="${escapeHtml(ministry)}">${escapeHtml(ministry)}</option>`).join("")}
         </select>
         <select class="managed-ministry-new-role" data-user-id="${escapeHtml(user.id)}">
-          ${Object.entries(registrationRoleLabels)
-            .filter(([value]) => requiresMinistry(value))
+          ${getSelectableMinistryRoleEntries()
             .map(([value, label]) => `<option value="${value}" ${value === "ministryMember" ? "selected" : ""}>${escapeHtml(label)}</option>`)
             .join("")}
         </select>
@@ -2771,10 +2830,10 @@ function renderOrganizer() {
   pastorRequestName.disabled = !editingEnabled;
   pastorRequestForm.querySelector("button").disabled = !editingEnabled;
   resetDemoButton.disabled = !editingEnabled;
-  if (!organizerModeNote.textContent || organizerModeNote.textContent.includes("PAW profiles pulled")) {
+  if (!organizerModeNote.textContent || organizerModeNote.textContent.includes("Worship Team profiles pulled")) {
     organizerModeNote.textContent = canEditOrganizer()
-      ? "Admin mode is active. Editing is enabled for the PAW Schedule."
-      : "You are in view mode. Turn on Admin to edit the PAW Schedule.";
+      ? "Admin mode is active. Editing is enabled for the Worship Team schedule."
+      : "You are in view mode. Turn on Admin to edit the Worship Team schedule.";
   }
   renderRegistryGroups(syncedRegistry);
   renderPastorRequests();
@@ -3130,7 +3189,7 @@ function getPawProfileRegistryNames() {
       return;
     }
 
-    if (["ministryHead", "ministryAssistant", "ministryPrimaryLeader"].includes(pawRole)) {
+    if (["ministryHead", "ministryAssistant"].includes(pawRole)) {
       derived.worshipLeaders.push(displayName);
     }
   });
@@ -3142,7 +3201,7 @@ function getPawProfileRegistryNames() {
 
 function getPawMinistryRole(user) {
   return (Array.isArray(user?.titles) ? user.titles : []).find((title) =>
-    title.scope === "ministry" && title.ministry === "Praise And Worship Team"
+    title.scope === "ministry" && title.ministry === "Worship Team"
   )?.role || "";
 }
 
@@ -3455,8 +3514,8 @@ function exportRangePdf(startDateValue, monthsValue, serviceFilter = "") {
     </tr>
   `).join("");
 
-  const pdfTitle = serviceFilter ? `PAW Schedule - ${state.services[serviceFilter].label}` : "PAW Schedule";
-  const subtitle = `Saved ${serviceFilter ? state.services[serviceFilter].label : "PAW Schedule"} records from ${escapeHtml(formatValue("date", startDate))} for the next ${months} month${months > 1 ? "s" : ""}. Use the browser print dialog and choose Save as PDF.`;
+  const pdfTitle = serviceFilter ? `Worship Team Schedule - ${state.services[serviceFilter].label}` : "Worship Team Schedule";
+  const subtitle = `Saved ${serviceFilter ? state.services[serviceFilter].label : "Worship Team Schedule"} records from ${escapeHtml(formatValue("date", startDate))} for the next ${months} month${months > 1 ? "s" : ""}. Use the browser print dialog and choose Save as PDF.`;
   printWindow.document.write(buildPdfDocument(pdfTitle, subtitle, rows));
   printWindow.document.close();
 }
@@ -3774,7 +3833,7 @@ function createDefaultSundaySeatEvent(dateString = getNextSundayDateString()) {
     id: `seat-sunday-${dateString}`,
     title: "Sunday Service",
     date: dateString,
-    ministry: "Ushers",
+    ministry: "Ushering",
     status: "approved",
     proposedById: "system",
     proposedByName: "System",
@@ -3925,6 +3984,11 @@ function normalizeContactNumber(value) {
   return raw.replace(/\D/g, "");
 }
 
+function normalizeMinistryName(value) {
+  const raw = String(value ?? "").trim();
+  return ministryNameAliases[raw] || raw;
+}
+
 function normalizeFullName(value) {
   return String(value ?? "").trim().replace(/\s+/g, " ").toLowerCase();
 }
@@ -3951,14 +4015,21 @@ function normalizeUserAccount(user) {
   const usernames = Array.isArray(user.usernames) && user.usernames.length > 0
     ? user.usernames
     : [user.username].filter(Boolean);
+  const normalizedTitles = (Array.isArray(user.titles) ? user.titles : inferTitlesFromLegacyUser(user)).map((title) => ({
+    ...title,
+    ministry: normalizeMinistryName(title?.ministry || "")
+  }));
+  const normalizedMinistries = sortEntries([...
+    new Set((Array.isArray(user.ministries) ? user.ministries : []).map(normalizeMinistryName).filter(Boolean))
+  ]);
   const normalized = {
     ...user,
     username: user.username || usernames[0] || "",
     usernames,
     role: user.id === "admin-seed" && user.role !== "member" ? "headAdmin" : (user.role || "member"),
     isCreator: Boolean(user.isCreator || user.id === "admin-seed"),
-    titles: Array.isArray(user.titles) && user.titles.length > 0 ? user.titles : inferTitlesFromLegacyUser(user),
-    ministries: Array.isArray(user.ministries) ? user.ministries : [],
+    titles: normalizedTitles,
+    ministries: normalizedMinistries,
     profile: user.profile ?? {}
   };
 
@@ -4662,7 +4733,7 @@ function canModeratePhotoUploads() {
     return true;
   }
 
-  return hasMinistryLeadership(currentUser, "Info");
+  return hasMinistryLeadership(currentUser, "Info (3 branches)");
 }
 
 function canManageSeats() {
@@ -4678,7 +4749,7 @@ function canManageSeats() {
     return true;
   }
 
-  return hasMinistryLeadership(currentUser, "Ushers");
+  return hasMinistryLeadership(currentUser, "Ushering");
 }
 
 function canProposeSeatEvents() {
@@ -4775,7 +4846,7 @@ function canEditOrganizer() {
     || ["headAdmin", "admin"].includes(currentUser.role)
     || (Array.isArray(currentUser.titles) && currentUser.titles.some((title) =>
       title.scope === "ministry"
-      && title.ministry === "Praise And Worship Team"
+      && title.ministry === "Worship Team"
       && ["ministryHead", "ministryAssistant"].includes(title.role)
     ))
   );
@@ -4865,7 +4936,7 @@ function inferTitlesFromLegacyUser(user) {
   }
 
   if (user.role === "tech") {
-    return [{ scope: "ministry", role: "ministryMember", ministry: "Tech" }];
+    return [{ scope: "ministry", role: "ministryMember", ministry: "Sound Technology" }];
   }
 
   return [{ scope: "general", role: "churchMember", ministry: "" }];
@@ -5010,7 +5081,7 @@ function getPhotoGrantCandidates() {
 
   return authState.users.filter((user) =>
     user.id !== currentUser?.id
-    && hasMinistryDownlinePostingRole(user, "Info")
+    && hasMinistryDownlinePostingRole(user, "Info (3 branches)")
   );
 }
 
