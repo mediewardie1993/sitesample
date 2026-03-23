@@ -3127,7 +3127,7 @@ function loadAuthState() {
         .filter((user) => {
           const id = String(user?.id ?? "");
           const usernames = Array.isArray(user?.usernames) ? user.usernames : [user?.username].filter(Boolean);
-          const removableSeedUsernames = ["medwardhead", "medwardadmin", "medwardmember1", "medwardmember2", "medwardvisitor"];
+          const removableSeedUsernames = ["admin", "medwardhead", "medwardadmin", "medwardmember1", "medwardmember2", "medwardvisitor"];
           return !user?.isTemporary
             && !id.startsWith("temp-")
             && !user?.isTemporary
@@ -3504,6 +3504,10 @@ async function syncAdminUsersFromSupabase() {
 function syncRemoteUserLocally(remoteUser, options = {}) {
   const normalized = normalizeRemoteUserAccount(remoteUser, options);
   if (!normalized) {
+    return null;
+  }
+
+  if (getUsernames(normalized).includes("admin")) {
     return null;
   }
 
