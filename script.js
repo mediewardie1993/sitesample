@@ -103,7 +103,8 @@ const announcementBoardMeta = {
   adonai: { label: "Adonai", ministry: "Adonai", grantMinistries: ["Adonai"] },
   hamakom: { label: "Hamakom", ministry: "Hamakom", grantMinistries: ["Hamakom"] },
   agape: { label: "Agape", ministry: "Agape", grantMinistries: ["Agape"] },
-  dance: { label: "Dance", ministry: "Dance", grantMinistries: ["Dance"] }
+  dance: { label: "Dance", ministry: "Dance", grantMinistries: ["Dance"] },
+  kids: { label: "Kids", ministry: "Kids", grantMinistries: ["Kids"] }
 };
 
 const samplePhotos = [
@@ -163,7 +164,8 @@ const photoSectionMeta = {
   adonai: { label: "Adonai", pageSection: "adonai" },
   hamakom: { label: "Hamakom", pageSection: "hamakom" },
   agape: { label: "Agape", pageSection: "agape" },
-  dance: { label: "Dance", pageSection: "dance" }
+  dance: { label: "Dance", pageSection: "dance" },
+  kids: { label: "Kids", pageSection: "kids" }
 };
 
 const sectionIds = ["home", "seats", "profile", "search", "photos", "adonai", "hamakom", "agape", "dance", "kids", "about", "organizer", "admin"];
@@ -252,26 +254,31 @@ const adonaiAnnouncementsInput = document.querySelector("#adonai-announcements-i
 const hamakomAnnouncementsInput = document.querySelector("#hamakom-announcements-input");
 const agapeAnnouncementsInput = document.querySelector("#agape-announcements-input");
 const danceAnnouncementsInput = document.querySelector("#dance-announcements-input");
+const kidsAnnouncementsInput = document.querySelector("#kids-announcements-input");
 const announcementsPosts = document.querySelector("#announcements-posts");
 const adonaiAnnouncementsPosts = document.querySelector("#adonai-announcements-posts");
 const hamakomAnnouncementsPosts = document.querySelector("#hamakom-announcements-posts");
 const agapeAnnouncementsPosts = document.querySelector("#agape-announcements-posts");
 const danceAnnouncementsPosts = document.querySelector("#dance-announcements-posts");
+const kidsAnnouncementsPosts = document.querySelector("#kids-announcements-posts");
 const announcementsSubmit = document.querySelector("#announcements-submit");
 const adonaiAnnouncementsSubmit = document.querySelector("#adonai-announcements-submit");
 const hamakomAnnouncementsSubmit = document.querySelector("#hamakom-announcements-submit");
 const agapeAnnouncementsSubmit = document.querySelector("#agape-announcements-submit");
 const danceAnnouncementsSubmit = document.querySelector("#dance-announcements-submit");
+const kidsAnnouncementsSubmit = document.querySelector("#kids-announcements-submit");
 const announcementsMessage = document.querySelector("#announcements-message");
 const adonaiAnnouncementsMessage = document.querySelector("#adonai-announcements-message");
 const hamakomAnnouncementsMessage = document.querySelector("#hamakom-announcements-message");
 const agapeAnnouncementsMessage = document.querySelector("#agape-announcements-message");
 const danceAnnouncementsMessage = document.querySelector("#dance-announcements-message");
+const kidsAnnouncementsMessage = document.querySelector("#kids-announcements-message");
 const announcementsGrantPanel = document.querySelector("#announcements-grant-panel");
 const adonaiAnnouncementsGrantPanel = document.querySelector("#adonai-announcements-grant-panel");
 const hamakomAnnouncementsGrantPanel = document.querySelector("#hamakom-announcements-grant-panel");
 const agapeAnnouncementsGrantPanel = document.querySelector("#agape-announcements-grant-panel");
 const danceAnnouncementsGrantPanel = document.querySelector("#dance-announcements-grant-panel");
+const kidsAnnouncementsGrantPanel = document.querySelector("#kids-announcements-grant-panel");
 const announcementsGrantUser = document.querySelector("#announcements-grant-user");
 const announcementsGrantUserList = document.querySelector("#announcements-grant-user-list");
 const adonaiAnnouncementsGrantUser = document.querySelector("#adonai-announcements-grant-user");
@@ -282,16 +289,20 @@ const agapeAnnouncementsGrantUser = document.querySelector("#agape-announcements
 const agapeAnnouncementsGrantUserList = document.querySelector("#agape-announcements-grant-user-list");
 const danceAnnouncementsGrantUser = document.querySelector("#dance-announcements-grant-user");
 const danceAnnouncementsGrantUserList = document.querySelector("#dance-announcements-grant-user-list");
+const kidsAnnouncementsGrantUser = document.querySelector("#kids-announcements-grant-user");
+const kidsAnnouncementsGrantUserList = document.querySelector("#kids-announcements-grant-user-list");
 const announcementsGrantButton = document.querySelector("#announcements-grant-button");
 const adonaiAnnouncementsGrantButton = document.querySelector("#adonai-announcements-grant-button");
 const hamakomAnnouncementsGrantButton = document.querySelector("#hamakom-announcements-grant-button");
 const agapeAnnouncementsGrantButton = document.querySelector("#agape-announcements-grant-button");
 const danceAnnouncementsGrantButton = document.querySelector("#dance-announcements-grant-button");
+const kidsAnnouncementsGrantButton = document.querySelector("#kids-announcements-grant-button");
 const announcementsGrants = document.querySelector("#announcements-grants");
 const adonaiAnnouncementsGrants = document.querySelector("#adonai-announcements-grants");
 const hamakomAnnouncementsGrants = document.querySelector("#hamakom-announcements-grants");
 const agapeAnnouncementsGrants = document.querySelector("#agape-announcements-grants");
 const danceAnnouncementsGrants = document.querySelector("#dance-announcements-grants");
+const kidsAnnouncementsGrants = document.querySelector("#kids-announcements-grants");
 const photoGallery = document.querySelector("#photo-gallery");
 const adonaiCarouselSlide = document.querySelector("#adonai-carousel-slide");
 const adonaiCarouselDots = document.querySelector("#adonai-carousel-dots");
@@ -309,6 +320,10 @@ const danceCarouselSlide = document.querySelector("#dance-carousel-slide");
 const danceCarouselDots = document.querySelector("#dance-carousel-dots");
 const danceCarouselPrev = document.querySelector("#dance-carousel-prev");
 const danceCarouselNext = document.querySelector("#dance-carousel-next");
+const kidsCarouselSlide = document.querySelector("#kids-carousel-slide");
+const kidsCarouselDots = document.querySelector("#kids-carousel-dots");
+const kidsCarouselPrev = document.querySelector("#kids-carousel-prev");
+const kidsCarouselNext = document.querySelector("#kids-carousel-next");
 const photoUploadForm = document.querySelector("#photo-upload-form");
 const photoSectionSelect = document.querySelector("#photo-section");
 const photoDate = document.querySelector("#photo-date");
@@ -330,9 +345,9 @@ const fixedPhotoCaption = document.querySelector("#fixed-photo-caption");
 const fixedPhotoFile = document.querySelector("#fixed-photo-file");
 const fixedPhotoButton = document.querySelector("#fixed-photo-button");
 const fixedPhotoMessage = document.querySelector("#fixed-photo-message");
-const pendingApprovals = document.querySelector("#pending-approvals");
 const approvedAccounts = document.querySelector("#approved-accounts");
 const ministryApprovals = document.querySelector("#ministry-approvals");
+const disciplinaryActions = document.querySelector("#disciplinary-actions");
 const serviceSections = document.querySelector("#service-sections");
 const sectionTemplate = document.querySelector("#service-section-template");
 const registryForm = document.querySelector("#registry-form");
@@ -369,7 +384,7 @@ let photoUploadGrants = loadPhotoUploadGrants();
 let currentUser = restoreSession();
 let activeSection = restoreActiveSection();
 let adminMode = false;
-let carouselIndexes = { sunday: 0, adonai: 0, hamakom: 0, agape: 0, dance: 0 };
+let carouselIndexes = { sunday: 0, adonai: 0, hamakom: 0, agape: 0, dance: 0, kids: 0 };
 let announcements = loadAnnouncements();
 let seatLayoutState = loadSeatLayoutState();
 let homeCarouselTimer = null;
@@ -384,7 +399,8 @@ const carouselRefs = {
   adonai: { slide: adonaiCarouselSlide, dots: adonaiCarouselDots, prev: adonaiCarouselPrev, next: adonaiCarouselNext },
   hamakom: { slide: hamakomCarouselSlide, dots: hamakomCarouselDots, prev: hamakomCarouselPrev, next: hamakomCarouselNext },
   agape: { slide: agapeCarouselSlide, dots: agapeCarouselDots, prev: agapeCarouselPrev, next: agapeCarouselNext },
-  dance: { slide: danceCarouselSlide, dots: danceCarouselDots, prev: danceCarouselPrev, next: danceCarouselNext }
+  dance: { slide: danceCarouselSlide, dots: danceCarouselDots, prev: danceCarouselPrev, next: danceCarouselNext },
+  kids: { slide: kidsCarouselSlide, dots: kidsCarouselDots, prev: kidsCarouselPrev, next: kidsCarouselNext }
 };
 
 const announcementRefs = {
@@ -442,6 +458,17 @@ const announcementRefs = {
     grantUserList: danceAnnouncementsGrantUserList,
     grantButton: danceAnnouncementsGrantButton,
     grants: danceAnnouncementsGrants
+  },
+  kids: {
+    input: kidsAnnouncementsInput,
+    posts: kidsAnnouncementsPosts,
+    submit: kidsAnnouncementsSubmit,
+    message: kidsAnnouncementsMessage,
+    grantPanel: kidsAnnouncementsGrantPanel,
+    grantUser: kidsAnnouncementsGrantUser,
+    grantUserList: kidsAnnouncementsGrantUserList,
+    grantButton: kidsAnnouncementsGrantButton,
+    grants: kidsAnnouncementsGrants
   }
 };
 
@@ -495,6 +522,8 @@ function initializeApp() {
   agapeCarouselNext.addEventListener("click", () => moveCarousel("agape", 1));
   danceCarouselPrev.addEventListener("click", () => moveCarousel("dance", -1));
   danceCarouselNext.addEventListener("click", () => moveCarousel("dance", 1));
+  kidsCarouselPrev.addEventListener("click", () => moveCarousel("kids", -1));
+  kidsCarouselNext.addEventListener("click", () => moveCarousel("kids", 1));
   Object.entries(announcementRefs).forEach(([sectionKey, refs]) => {
     refs.submit.addEventListener("click", () => handleAnnouncementSubmit(sectionKey));
     refs.grantButton.addEventListener("click", () => handleAnnouncementGrant(sectionKey));
@@ -1862,42 +1891,17 @@ function renderPhotoList(container, list, emptyLabel) {
 
 function renderAdmin() {
   if (!(adminMode && hasMinistryApprovalAccess())) {
-    pendingApprovals.innerHTML = `<div class="empty-card">Admin access required.</div>`;
     approvedAccounts.innerHTML = `<div class="empty-card">Admin access required.</div>`;
     ministryApprovals.innerHTML = `<div class="empty-card">Admin or ministry leadership access required.</div>`;
+    disciplinaryActions.innerHTML = `<div class="empty-card">Head Admin or Admin access required.</div>`;
     return;
   }
 
   const fullAdmin = hasAdminAccess();
-  pendingApprovals.innerHTML = "";
   approvedAccounts.innerHTML = "";
 
   if (!fullAdmin) {
-    pendingApprovals.innerHTML = `<div class="empty-card">Full admin access is needed for account approvals.</div>`;
     approvedAccounts.innerHTML = `<div class="empty-card">Full admin access is needed for role management.</div>`;
-  } else if (authState.pending.length === 0) {
-    pendingApprovals.innerHTML = `<div class="empty-card">No pending requests right now.</div>`;
-  } else {
-    authState.pending.forEach((account) => {
-      const item = document.createElement("article");
-      item.className = "admin-item";
-      item.innerHTML = `
-        <div class="admin-item-head">
-          <div>
-            <strong>${escapeHtml(account.name)}</strong>
-            <p>@${escapeHtml(account.username)} requested ${escapeHtml(getRequestedAccessLabel(account))}</p>
-          </div>
-          <span class="status-pill">Pending</span>
-        </div>
-        <div class="admin-actions">
-          <button class="primary-btn approve-btn" type="button">Approve</button>
-          <button class="ghost-btn reject-btn" type="button">Reject</button>
-        </div>
-      `;
-      item.querySelector(".approve-btn").addEventListener("click", () => approveAccount(account.id));
-      item.querySelector(".reject-btn").addEventListener("click", () => rejectAccount(account.id));
-      pendingApprovals.appendChild(item);
-    });
   }
 
   if (fullAdmin) {
@@ -1953,6 +1957,7 @@ function renderAdmin() {
   }
 
   renderMinistryApprovals();
+  renderDisciplinaryActions(fullAdmin);
 }
 
 function renderMinistryApprovals() {
@@ -1984,6 +1989,60 @@ function renderMinistryApprovals() {
     item.querySelector(".reject-btn").addEventListener("click", () => rejectMinistryRequest(request.id));
     ministryApprovals.appendChild(item);
   });
+}
+
+function renderDisciplinaryActions(fullAdmin = hasAdminAccess()) {
+  disciplinaryActions.innerHTML = "";
+
+  if (!fullAdmin) {
+    disciplinaryActions.innerHTML = `<div class="empty-card">Head Admin or Admin access required.</div>`;
+    return;
+  }
+
+  if (!authState.users.length) {
+    disciplinaryActions.innerHTML = `<div class="empty-card">No registered members found.</div>`;
+    return;
+  }
+
+  authState.users
+    .slice()
+    .sort((left, right) => (left.name || left.username || "").localeCompare(right.name || right.username || ""))
+    .forEach((account) => {
+      const inDa = isInDaList(account.name || account.username || "");
+      const item = document.createElement("article");
+      item.className = "admin-item";
+      item.innerHTML = `
+        <div class="admin-item-head">
+          <div>
+            <strong>${escapeHtml(account.name || account.username)}</strong>
+            <p>@${escapeHtml(account.username || "")}</p>
+          </div>
+          <span class="status-pill">${inDa ? "DA" : "Clear"}</span>
+        </div>
+        <div class="admin-actions">
+          <button class="ghost-btn da-toggle-btn" type="button">${inDa ? "Remove from DA" : "Add to DA"}</button>
+        </div>
+      `;
+
+      item.querySelector(".da-toggle-btn").addEventListener("click", () => {
+        const displayName = account.name || account.username || "";
+        if (!displayName) {
+          return;
+        }
+
+        if (isInDaList(displayName)) {
+          const exactMatch = state.daList.find((entry) => samePerson(entry, displayName)) || displayName;
+          removeDaPerson(exactMatch);
+        } else {
+          addDaPerson(displayName);
+        }
+
+        renderAdmin();
+        renderOrganizer();
+      });
+
+      disciplinaryActions.appendChild(item);
+    });
 }
 
 function approveMinistryRequest(requestId) {
@@ -2028,34 +2087,6 @@ function removeMinistryRequest(requestId) {
   authState.ministryRequests = (authState.ministryRequests ?? []).filter((request) => !(request.id === requestId && request.userId === currentUser.id));
   persistAuth();
   renderApp();
-}
-
-function approveAccount(accountId) {
-  const match = authState.pending.find((account) => account.id === accountId);
-  if (!match) {
-    return;
-  }
-
-  authState.pending = authState.pending.filter((account) => account.id !== accountId);
-  authState.users.push({
-    id: `user-${Date.now()}`,
-    name: match.name,
-    username: match.username,
-    usernames: [match.username],
-    password: match.password,
-    role: match.role ?? "member",
-    titles: Array.isArray(match.titles) ? match.titles : buildInitialTitles(match.requestedRole, match.requestedMinistry),
-    ministries: Array.isArray(match.ministries) ? match.ministries : (match.requestedMinistry ? [match.requestedMinistry] : []),
-    profile: match.profile ?? {}
-  });
-  persistAuth();
-  renderAdmin();
-}
-
-function rejectAccount(accountId) {
-  authState.pending = authState.pending.filter((account) => account.id !== accountId);
-  persistAuth();
-  renderAdmin();
 }
 
 function updateAccountRole(accountId, role) {
@@ -3018,19 +3049,21 @@ function loadPhotos() {
 
 function loadFixedPhotos() {
   const saved = window.localStorage.getItem(FIXED_PHOTO_KEY);
-  const fallback = { sunday: { ...fixedHomePhoto }, adonai: null, hamakom: null, agape: null };
+  const fallback = { sunday: { ...fixedHomePhoto }, adonai: null, hamakom: null, agape: null, dance: null, kids: null };
   if (!saved) {
     return fallback;
   }
 
   try {
     const parsed = JSON.parse(saved);
-    if (parsed && !Array.isArray(parsed) && (parsed.sunday || parsed.adonai || parsed.hamakom || parsed.agape)) {
+    if (parsed && !Array.isArray(parsed) && (parsed.sunday || parsed.adonai || parsed.hamakom || parsed.agape || parsed.dance || parsed.kids)) {
       return {
         sunday: parsed.sunday ? { section: "sunday", ...parsed.sunday } : { ...fixedHomePhoto },
         adonai: parsed.adonai ? { section: "adonai", ...parsed.adonai } : null,
         hamakom: parsed.hamakom ? { section: "hamakom", ...parsed.hamakom } : null,
-        agape: parsed.agape ? { section: "agape", ...parsed.agape } : null
+        agape: parsed.agape ? { section: "agape", ...parsed.agape } : null,
+        dance: parsed.dance ? { section: "dance", ...parsed.dance } : null,
+        kids: parsed.kids ? { section: "kids", ...parsed.kids } : null
       };
     }
 
@@ -3043,7 +3076,7 @@ function loadFixedPhotos() {
 
 function loadPhotoUploadGrants() {
   const saved = window.localStorage.getItem(PHOTO_GRANTS_KEY);
-  const fallback = { sunday: [], adonai: [], hamakom: [], agape: [] };
+  const fallback = { sunday: [], adonai: [], hamakom: [], agape: [], dance: [], kids: [] };
   if (!saved) {
     return fallback;
   }
@@ -3054,7 +3087,9 @@ function loadPhotoUploadGrants() {
       sunday: Array.isArray(parsed.sunday) ? parsed.sunday : [],
       adonai: Array.isArray(parsed.adonai) ? parsed.adonai : [],
       hamakom: Array.isArray(parsed.hamakom) ? parsed.hamakom : [],
-      agape: Array.isArray(parsed.agape) ? parsed.agape : []
+      agape: Array.isArray(parsed.agape) ? parsed.agape : [],
+      dance: Array.isArray(parsed.dance) ? parsed.dance : [],
+      kids: Array.isArray(parsed.kids) ? parsed.kids : []
     };
   } catch (error) {
     return fallback;
@@ -3063,7 +3098,7 @@ function loadPhotoUploadGrants() {
 
 function loadAnnouncements() {
   const saved = window.localStorage.getItem(ANNOUNCEMENTS_KEY);
-  const fallback = { posts: { home: [], adonai: [], hamakom: [], agape: [] }, grants: { home: [], adonai: [], hamakom: [], agape: [] } };
+  const fallback = { posts: { home: [], adonai: [], hamakom: [], agape: [], dance: [], kids: [] }, grants: { home: [], adonai: [], hamakom: [], agape: [], dance: [], kids: [] } };
 
   if (!saved) {
     return fallback;
@@ -3087,13 +3122,17 @@ function loadAnnouncements() {
           home: Array.isArray(parsed.posts?.home) ? parsed.posts.home : [],
           adonai: Array.isArray(parsed.posts?.adonai) ? parsed.posts.adonai : [],
           hamakom: Array.isArray(parsed.posts?.hamakom) ? parsed.posts.hamakom : [],
-          agape: Array.isArray(parsed.posts?.agape) ? parsed.posts.agape : []
+          agape: Array.isArray(parsed.posts?.agape) ? parsed.posts.agape : [],
+          dance: Array.isArray(parsed.posts?.dance) ? parsed.posts.dance : [],
+          kids: Array.isArray(parsed.posts?.kids) ? parsed.posts.kids : []
         },
         grants: {
           home: Array.isArray(parsed.grants?.home) ? parsed.grants.home : [],
           adonai: Array.isArray(parsed.grants?.adonai) ? parsed.grants.adonai : [],
           hamakom: Array.isArray(parsed.grants?.hamakom) ? parsed.grants.hamakom : [],
-          agape: Array.isArray(parsed.grants?.agape) ? parsed.grants.agape : []
+          agape: Array.isArray(parsed.grants?.agape) ? parsed.grants.agape : [],
+          dance: Array.isArray(parsed.grants?.dance) ? parsed.grants.dance : [],
+          kids: Array.isArray(parsed.grants?.kids) ? parsed.grants.kids : []
         }
       };
     }
@@ -3104,7 +3143,9 @@ function loadAnnouncements() {
         home: parsed.home ? [buildLegacyAnnouncementPost(parsed.home)] : [],
         adonai: parsed.adonai ? [buildLegacyAnnouncementPost(parsed.adonai)] : [],
         hamakom: parsed.hamakom ? [buildLegacyAnnouncementPost(parsed.hamakom)] : [],
-        agape: parsed.agape ? [buildLegacyAnnouncementPost(parsed.agape)] : []
+        agape: parsed.agape ? [buildLegacyAnnouncementPost(parsed.agape)] : [],
+        dance: parsed.dance ? [buildLegacyAnnouncementPost(parsed.dance)] : [],
+        kids: parsed.kids ? [buildLegacyAnnouncementPost(parsed.kids)] : []
       }
     };
   } catch (error) {
