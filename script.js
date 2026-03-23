@@ -1460,30 +1460,30 @@ function renderProfileSearchResults() {
   });
 
   profileSearchResults.querySelectorAll(".managed-ministry-save").forEach((button) => {
-    button.addEventListener("click", () => {
+    button.addEventListener("click", async () => {
       const userId = button.dataset.userId;
       const ministry = button.dataset.ministry;
       const select = profileSearchResults.querySelector(`.managed-ministry-select[data-user-id="${cssEscape(userId)}"][data-ministry="${cssEscape(ministry)}"]`);
       if (!select) {
         return;
       }
-      updateUserMinistryRole(userId, ministry, select.value);
+      await updateUserMinistryRole(userId, ministry, select.value);
     });
   });
 
   profileSearchResults.querySelectorAll(".managed-ministry-remove").forEach((button) => {
-    button.addEventListener("click", () => removeUserMinistry(button.dataset.userId, button.dataset.ministry));
+    button.addEventListener("click", async () => removeUserMinistry(button.dataset.userId, button.dataset.ministry));
   });
 
   profileSearchResults.querySelectorAll(".managed-ministry-add").forEach((button) => {
-    button.addEventListener("click", () => {
+    button.addEventListener("click", async () => {
       const userId = button.dataset.userId;
       const ministrySelect = profileSearchResults.querySelector(`.managed-ministry-new[data-user-id="${cssEscape(userId)}"]`);
       const roleSelect = profileSearchResults.querySelector(`.managed-ministry-new-role[data-user-id="${cssEscape(userId)}"]`);
       if (!ministrySelect || !roleSelect) {
         return;
       }
-      addUserMinistry(userId, ministrySelect.value, roleSelect.value);
+      await addUserMinistry(userId, ministrySelect.value, roleSelect.value);
     });
   });
 }
@@ -1851,9 +1851,17 @@ function removeProfileMinistry(ministry) {
   renderApp();
 }
 
-function updateUserMinistryRole(userId, ministry, role) {
+async function updateUserMinistryRole(userId, ministry, role) {
   const target = authState.users.find((user) => user.id === userId);
   if (!target || !canManageUserMinistry(target, ministry) || !requiresMinistry(role)) {
+    return;
+  }
+
+  const remoteResult = await upsertSupabaseUserMinistry(userId, ministry, role);
+  if (remoteResult?.success && remoteResult.user) {
+    syncRemoteUserLocally(remoteResult.user);
+    persistAuth();
+    renderApp();
     return;
   }
 
@@ -1872,9 +1880,17 @@ function updateUserMinistryRole(userId, ministry, role) {
   renderApp();
 }
 
-function removeUserMinistry(userId, ministry) {
+async function removeUserMinistry(userId, ministry) {
   const target = authState.users.find((user) => user.id === userId);
   if (!target || !canManageUserMinistry(target, ministry)) {
+    return;
+  }
+
+  const remoteResult = await removeSupabaseUserMinistry(userId, ministry);
+  if (remoteResult?.success && remoteResult.user) {
+    syncRemoteUserLocally(remoteResult.user);
+    persistAuth();
+    renderApp();
     return;
   }
 
@@ -1894,13 +1910,21 @@ function removeUserMinistry(userId, ministry) {
   renderApp();
 }
 
-function addUserMinistry(userId, ministry, role) {
+async function addUserMinistry(userId, ministry, role) {
   const target = authState.users.find((user) => user.id === userId);
   if (!target || !canManageAnyUserMinistry(target) || !ministry || !requiresMinistry(role)) {
     return;
   }
 
   if ((Array.isArray(target.ministries) ? target.ministries : []).includes(ministry)) {
+    renderApp();
+    return;
+  }
+
+  const remoteResult = await upsertSupabaseUserMinistry(userId, ministry, role);
+  if (remoteResult?.success && remoteResult.user) {
+    syncRemoteUserLocally(remoteResult.user);
+    persistAuth();
     renderApp();
     return;
   }
@@ -3681,6 +3705,21 @@ async function approveSupabaseMinistryRequestRemote(requestId) {
 async function rejectSupabaseMinistryRequestRemote(requestId) {
   return callSupabaseRpc("reject_ministry_request", {
     p_request_id: requestId
+  });
+}
+
+async function upsertSupabaseUserMinistry(userId, ministry, role) {
+  return callSupabaseRpc("upsert_user_ministry", {
+    p_user_id: userId,
+    p_ministry: ministry,
+    p_role: role
+  });
+}
+
+async function removeSupabaseUserMinistry(userId, ministry) {
+  return callSupabaseRpc("remove_user_ministry", {
+    p_user_id: userId,
+    p_ministry: ministry
   });
 }
 
