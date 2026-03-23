@@ -402,6 +402,7 @@ let profileEditMode = false;
 let lastProfileSearchTerm = "";
 let pendingSeatSelections = [];
 let adminUserSyncInFlight = false;
+let ministryRequestSyncInFlight = false;
 
 const carouselRefs = {
   sunday: { slide: homeCarouselSlide, dots: homeCarouselDots, prev: homeCarouselPrev, next: homeCarouselNext },
@@ -1283,6 +1284,8 @@ function renderProfile() {
     return;
   }
 
+  syncMinistryRequestsFromSupabase();
+
   const profile = currentUser.profile ?? {};
   const displayName = currentUser.name || currentUser.username || "Friend";
   profileWelcome.textContent = `Welcome ${displayName}!`;
@@ -1624,7 +1627,7 @@ function handleProfileSave(event) {
   renderApp();
 }
 
-function handleProfileMinistrySave(event) {
+async function handleProfileMinistrySave(event) {
   event.preventDefault();
 
   if (!currentUser) {
@@ -1648,20 +1651,36 @@ function handleProfileMinistrySave(event) {
     return;
   }
 
-  authState.ministryRequests = [
-    ...(Array.isArray(authState.ministryRequests) ? authState.ministryRequests : []),
-    {
-      id: `ministry-request-${Date.now()}`,
-      userId: currentUser.id,
-      name: currentUser.name || currentUser.username,
-      username: currentUser.username,
-      ministry,
-      role,
-      requestedAt: new Date().toISOString()
-    }
-  ];
-  persistAuth();
-  profileMessage.textContent = "Ministry request sent for approval.";
+  const remoteResult = await createSupabaseMinistryRequest({
+    p_user_id: currentUser.id,
+    p_name: currentUser.name || currentUser.username,
+    p_username: currentUser.username,
+    p_ministry: ministry,
+    p_role: role
+  });
+
+  if (remoteResult.success) {
+    authState.ministryRequests = Array.isArray(remoteResult.requests)
+      ? remoteResult.requests.map(normalizeMinistryRequestRecord).filter(Boolean)
+      : authState.ministryRequests;
+    persistAuth();
+    profileMessage.textContent = "Ministry request sent for approval.";
+  } else {
+    authState.ministryRequests = [
+      ...(Array.isArray(authState.ministryRequests) ? authState.ministryRequests : []),
+      {
+        id: `ministry-request-${Date.now()}`,
+        userId: currentUser.id,
+        name: currentUser.name || currentUser.username,
+        username: currentUser.username,
+        ministry,
+        role,
+        requestedAt: new Date().toISOString()
+      }
+    ];
+    persistAuth();
+    profileMessage.textContent = "Ministry request saved locally for now.";
+  }
   renderApp();
 }
 
@@ -2072,6 +2091,7 @@ function renderAdmin() {
   }
 
   const fullAdmin = hasAdminAccess();
+  syncMinistryRequestsFromSupabase();
   recentMembers.innerHTML = "";
   approvedAccounts.innerHTML = "";
 
@@ -2083,7 +2103,7 @@ function renderAdmin() {
   if (fullAdmin) {
     syncAdminUsersFromSupabase();
     const manageableAccounts = authState.users
-      .filter((account) => canViewManagedAccount(account))
+      .filter((account) => !account.isCreator && canViewManagedAccount(account))
       .sort(sortManagedAccountsByNewest);
 
     const newestAccounts = manageableAccounts.slice(0, 8);
@@ -2279,9 +2299,24 @@ function renderDisciplinaryActions(fullAdmin = hasAdminAccess()) {
     });
 }
 
-function approveMinistryRequest(requestId) {
+async function approveMinistryRequest(requestId) {
   const request = (authState.ministryRequests ?? []).find((entry) => entry.id === requestId);
   if (!request || !canApproveMinistryRequest(request)) {
+    return;
+  }
+
+  const remoteResult = await approveSupabaseMinistryRequestRemote(requestId);
+  if (remoteResult.success) {
+    authState.ministryRequests = Array.isArray(remoteResult.requests)
+      ? remoteResult.requests.map(normalizeMinistryRequestRecord).filter(Boolean)
+      : (authState.ministryRequests ?? []).filter((entry) => entry.id !== requestId);
+    if (remoteResult.user) {
+      syncRemoteUserLocally(remoteResult.user);
+    } else if (Array.isArray(remoteResult.users)) {
+      remoteResult.users.forEach((user) => syncRemoteUserLocally(user));
+    }
+    persistAuth();
+    renderApp();
     return;
   }
 
@@ -2302,9 +2337,19 @@ function approveMinistryRequest(requestId) {
   renderApp();
 }
 
-function rejectMinistryRequest(requestId) {
+async function rejectMinistryRequest(requestId) {
   const request = (authState.ministryRequests ?? []).find((entry) => entry.id === requestId);
   if (!request || !canApproveMinistryRequest(request)) {
+    return;
+  }
+
+  const remoteResult = await rejectSupabaseMinistryRequestRemote(requestId);
+  if (remoteResult.success) {
+    authState.ministryRequests = Array.isArray(remoteResult.requests)
+      ? remoteResult.requests.map(normalizeMinistryRequestRecord).filter(Boolean)
+      : (authState.ministryRequests ?? []).filter((entry) => entry.id !== requestId);
+    persistAuth();
+    renderApp();
     return;
   }
 
@@ -2349,8 +2394,18 @@ function rejectUsernameChangeRequest(requestId) {
   renderApp();
 }
 
-function removeMinistryRequest(requestId) {
+async function removeMinistryRequest(requestId) {
   if (!currentUser) {
+    return;
+  }
+
+  const remoteResult = await cancelSupabaseMinistryRequest(requestId, currentUser.id);
+  if (remoteResult.success) {
+    authState.ministryRequests = Array.isArray(remoteResult.requests)
+      ? remoteResult.requests.map(normalizeMinistryRequestRecord).filter(Boolean)
+      : (authState.ministryRequests ?? []).filter((request) => !(request.id === requestId && request.userId === currentUser.id));
+    persistAuth();
+    renderApp();
     return;
   }
 
@@ -3580,6 +3635,33 @@ async function listSupabaseUsersForAdmin() {
   return callSupabaseRpc("list_users_admin", {});
 }
 
+async function listSupabaseMinistryRequests() {
+  return callSupabaseRpc("list_ministry_requests", {});
+}
+
+async function createSupabaseMinistryRequest(payload) {
+  return callSupabaseRpc("create_ministry_request", payload);
+}
+
+async function cancelSupabaseMinistryRequest(requestId, userId) {
+  return callSupabaseRpc("cancel_ministry_request", {
+    p_request_id: requestId,
+    p_user_id: userId
+  });
+}
+
+async function approveSupabaseMinistryRequestRemote(requestId) {
+  return callSupabaseRpc("approve_ministry_request", {
+    p_request_id: requestId
+  });
+}
+
+async function rejectSupabaseMinistryRequestRemote(requestId) {
+  return callSupabaseRpc("reject_ministry_request", {
+    p_request_id: requestId
+  });
+}
+
 async function syncAdminUsersFromSupabase() {
   if (!hasAdminAccess() || adminUserSyncInFlight) {
     return;
@@ -3599,6 +3681,50 @@ async function syncAdminUsersFromSupabase() {
     }
   } finally {
     adminUserSyncInFlight = false;
+  }
+}
+
+function normalizeMinistryRequestRecord(request) {
+  if (!request || typeof request !== "object") {
+    return null;
+  }
+
+  return {
+    id: request.id,
+    userId: request.userId || request.user_id || "",
+    name: request.name || "",
+    username: request.username || "",
+    ministry: request.ministry || "",
+    role: request.role || "ministryMember",
+    requestedAt: request.requestedAt || request.requested_at || new Date().toISOString()
+  };
+}
+
+async function syncMinistryRequestsFromSupabase() {
+  if (ministryRequestSyncInFlight || !currentUser) {
+    return;
+  }
+
+  ministryRequestSyncInFlight = true;
+  try {
+    const result = await listSupabaseMinistryRequests();
+    const requests = Array.isArray(result?.requests)
+      ? result.requests.map(normalizeMinistryRequestRecord).filter(Boolean)
+      : [];
+
+    authState.ministryRequests = requests;
+
+    if (Array.isArray(result?.users)) {
+      result.users.forEach((user) => syncRemoteUserLocally(user));
+    }
+
+    persistAuth();
+
+    if (activeSection === "admin" || activeSection === "profile") {
+      renderApp();
+    }
+  } finally {
+    ministryRequestSyncInFlight = false;
   }
 }
 
