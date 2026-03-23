@@ -75,76 +75,6 @@ const defaultAuth = {
     ],
     ministries: [],
     profile: {}
-  },
-  {
-    id: "headadmin-seed",
-    name: "Medward Head",
-    username: "medwardhead",
-    usernames: ["medwardhead"],
-    password: "",
-    role: "headAdmin",
-    isCreator: false,
-    titles: [
-      { scope: "platform", role: "headAdmin", ministry: "" }
-    ],
-    ministries: [],
-    profile: {}
-  },
-  {
-    id: "admin-seed-2",
-    name: "Medward Admin",
-    username: "medwardadmin",
-    usernames: ["medwardadmin"],
-    password: "",
-    role: "admin",
-    isCreator: false,
-    titles: [
-      { scope: "platform", role: "admin", ministry: "" }
-    ],
-    ministries: [],
-    profile: {}
-  },
-  {
-    id: "member-seed-1",
-    name: "Medward Member 1",
-    username: "medwardmember1",
-    usernames: ["medwardmember1"],
-    password: "",
-    role: "member",
-    isCreator: false,
-    titles: [
-      { scope: "general", role: "churchMember", ministry: "" }
-    ],
-    ministries: [],
-    profile: {}
-  },
-  {
-    id: "member-seed-2",
-    name: "Medward Member 2",
-    username: "medwardmember2",
-    usernames: ["medwardmember2"],
-    password: "",
-    role: "member",
-    isCreator: false,
-    titles: [
-      { scope: "general", role: "churchMember", ministry: "" }
-    ],
-    ministries: [],
-    profile: {}
-  },
-  {
-    id: "visitor-seed",
-    name: "Medward Visitor",
-    username: "medwardvisitor",
-    usernames: ["medwardvisitor"],
-    password: "",
-    role: "member",
-    isCreator: false,
-    titles: [
-      { scope: "general", role: "visitor", ministry: "" }
-    ],
-    ministries: [],
-    profile: {}
   }],
   pending: [],
   ministryRequests: [],
@@ -2964,7 +2894,15 @@ function loadAuthState() {
     const parsed = JSON.parse(saved);
     const users = Array.isArray(parsed.users) && parsed.users.length > 0
       ? parsed.users
-        .filter((user) => !user?.isTemporary && !String(user?.id ?? "").startsWith("temp-"))
+        .filter((user) => {
+          const id = String(user?.id ?? "");
+          const usernames = Array.isArray(user?.usernames) ? user.usernames : [user?.username].filter(Boolean);
+          const removableSeedUsernames = ["medwardhead", "medwardadmin", "medwardmember1", "medwardmember2", "medwardvisitor"];
+          return !user?.isTemporary
+            && !id.startsWith("temp-")
+            && !user?.isTemporary
+            && !usernames.some((username) => removableSeedUsernames.includes(username));
+        })
         .map(normalizeUserAccount)
       : structuredClone(defaultAuth.users);
     return {
