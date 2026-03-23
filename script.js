@@ -80,11 +80,11 @@ const defaultAuth = {
     profile: {}
   },
   {
-    id: "rcb-seed",
-    name: "RCB",
-    username: "RCB",
-    usernames: ["RCB"],
-    password: "RCB",
+    id: "ferdie-seed",
+    name: "Ferdie",
+    username: "Ferdie",
+    usernames: ["Ferdie"],
+    password: "Ferdie",
     role: "headAdmin",
     isCreator: false,
     titles: [
@@ -95,6 +95,7 @@ const defaultAuth = {
   }],
   pending: [],
   ministryRequests: [],
+  usernameRequests: [],
   ministries: defaultMinistries
 };
 
@@ -222,6 +223,11 @@ const newPasswordInput = document.querySelector("#new-password");
 const confirmPasswordInput = document.querySelector("#confirm-password");
 const passwordMessage = document.querySelector("#password-message");
 const profilePasswordCard = document.querySelector("#profile-password-card");
+const changeUsernameForm = document.querySelector("#change-username-form");
+const newUsernameInput = document.querySelector("#new-username");
+const usernameMessage = document.querySelector("#username-message");
+const profileUsernameCard = document.querySelector("#profile-username-card");
+const profileUsernameRequests = document.querySelector("#profile-username-requests");
 const profileMinistryManager = document.querySelector("#profile-ministry-manager");
 const createMinistryForm = document.querySelector("#create-ministry-form");
 const createMinistryInput = document.querySelector("#create-ministry-input");
@@ -347,6 +353,7 @@ const fixedPhotoButton = document.querySelector("#fixed-photo-button");
 const fixedPhotoMessage = document.querySelector("#fixed-photo-message");
 const approvedAccounts = document.querySelector("#approved-accounts");
 const ministryApprovals = document.querySelector("#ministry-approvals");
+const usernameApprovals = document.querySelector("#username-approvals");
 const disciplinaryActions = document.querySelector("#disciplinary-actions");
 const serviceSections = document.querySelector("#service-sections");
 const sectionTemplate = document.querySelector("#service-section-template");
@@ -492,6 +499,7 @@ function initializeApp() {
   profileMinistryForm.addEventListener("submit", handleProfileMinistrySave);
   profileSearchForm.addEventListener("submit", handleProfileSearch);
   changePasswordForm.addEventListener("submit", handlePasswordChange);
+  changeUsernameForm.addEventListener("submit", handleUsernameChangeRequest);
   createMinistryForm.addEventListener("submit", handleCreateMinistry);
   navButtons.forEach((button) => {
     button.addEventListener("click", () => {
@@ -1305,12 +1313,14 @@ function renderProfile() {
   renderProfileMinistries();
   renderProfileMinistryOptions();
   renderProfileMinistryRequests();
+  renderProfileUsernameRequests();
   renderProfileSearchResults();
   profileSummary.classList.toggle("app-hidden", profileEditMode);
   profileForm.classList.toggle("app-hidden", !profileEditMode);
   profilePhotoForm.classList.toggle("app-hidden", !profileEditMode);
   profileMinistryForm.classList.toggle("app-hidden", !profileEditMode);
   profilePasswordCard.classList.toggle("app-hidden", !profileEditMode);
+  profileUsernameCard.classList.toggle("app-hidden", !profileEditMode);
   profileMinistryManager.classList.toggle("app-hidden", !(profileEditMode && canManageMinistryAssignments()));
 }
 

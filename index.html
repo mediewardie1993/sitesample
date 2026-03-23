@@ -325,6 +325,21 @@
             <p id="password-message" class="auth-message"></p>
           </section>
 
+          <section id="profile-username-card" class="profile-card profile-bottom-card app-hidden">
+            <div class="section-heading">
+              <div>
+                <p class="mini-label">Account</p>
+                <h2>Change username</h2>
+              </div>
+            </div>
+            <form id="change-username-form" class="inline-form compact-form">
+              <input id="new-username" type="text" placeholder="Requested new username">
+              <button class="secondary-btn" type="submit">Request Username Change</button>
+            </form>
+            <p id="username-message" class="auth-message"></p>
+            <div id="profile-username-requests" class="profile-request-list"></div>
+          </section>
+
           <section id="profile-ministry-manager" class="profile-card profile-bottom-card app-hidden">
             <div class="section-heading">
               <div>
@@ -796,6 +811,15 @@
             </div>
           </div>
           <div id="ministry-approvals" class="admin-list"></div>
+        </article>
+        <article class="shell-card">
+          <div class="section-heading">
+            <div>
+              <p class="mini-label">Username Requests</p>
+              <h2>Approve username changes</h2>
+            </div>
+          </div>
+          <div id="username-approvals" class="admin-list"></div>
         </article>
         <article class="shell-card">
           <div class="section-heading">
