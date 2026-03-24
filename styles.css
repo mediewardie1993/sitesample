@@ -1113,24 +1113,24 @@ code {
 }
 
 .cell-tree-row {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
+  display: grid;
   gap: 10px;
+  justify-items: center;
   width: 100%;
 }
 
 .cell-tree-node {
   display: grid;
   gap: 5px;
-  width: min(142px, 100%);
+  width: min(220px, 100%);
   min-height: 104px;
   padding: 10px 9px;
   border-radius: 14px;
   border: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.03);
-  justify-items: center;
-  text-align: center;
+  justify-items: start;
+  align-content: start;
+  text-align: left;
 }
 
 .cell-tree-node strong {
@@ -1151,7 +1151,9 @@ code {
   color: var(--text);
   font: inherit;
   font-weight: 600;
-  text-align: center;
+  text-align: left;
+  box-shadow: none;
+  border-radius: 0;
 }
 
 .cell-tree-name-link:hover,
@@ -1163,7 +1165,7 @@ code {
 }
 
 .cell-tree-node .person-schedule-meta {
-  text-align: center;
+  text-align: left;
   font-size: 0.7rem;
   line-height: 1.15;
 }

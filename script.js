@@ -119,10 +119,10 @@ const defaultAuth = {
   },
   {
     id: "ferdie-seed",
-    name: "Ptr. Ferdie Tolentino",
-    username: "Ferdie",
-    usernames: ["Ferdie"],
-    password: "Ferdie",
+    name: "Ptr. Ferdz Tolentino",
+    username: "Ferdz",
+    usernames: ["Ferdz"],
+    password: "Ferdz",
     role: "headAdmin",
     isCreator: false,
     titles: [
@@ -4032,7 +4032,7 @@ function getSeedCellManagementRecords() {
     {
       id: "cell-seed-ferdie",
       userId: "ferdie-seed",
-      name: "Ptr. Ferdie Tolentino",
+      name: "Ptr. Ferdz Tolentino",
       leadershipOffice: "adminPastor",
       manualLevelOverride: "networkLeader"
     },
@@ -4042,7 +4042,7 @@ function getSeedCellManagementRecords() {
       name: "Reny Borlagdan",
       leadershipOffice: "cellManager",
       cellLeaderUserId: "cell-seed-ferdie",
-      cellLeaderName: "Ptr. Ferdie Tolentino",
+      cellLeaderName: "Ptr. Ferdz Tolentino",
       manualLevelOverride: "networkLeader"
     },
     {
@@ -4050,7 +4050,7 @@ function getSeedCellManagementRecords() {
       userId: "",
       name: "Edward Manapol",
       cellLeaderUserId: "cell-seed-ferdie",
-      cellLeaderName: "Ptr. Ferdie Tolentino",
+      cellLeaderName: "Ptr. Ferdz Tolentino",
       manualLevelOverride: "member"
     },
     {
@@ -4058,7 +4058,7 @@ function getSeedCellManagementRecords() {
       userId: "",
       name: "Charles Francis Echano",
       cellLeaderUserId: "cell-seed-ferdie",
-      cellLeaderName: "Ptr. Ferdie Tolentino",
+      cellLeaderName: "Ptr. Ferdz Tolentino",
       manualLevelOverride: "member"
     },
     {
@@ -4066,7 +4066,7 @@ function getSeedCellManagementRecords() {
       userId: "",
       name: "Louisse Encela",
       cellLeaderUserId: "cell-seed-ferdie",
-      cellLeaderName: "Ptr. Ferdie Tolentino",
+      cellLeaderName: "Ptr. Ferdz Tolentino",
       manualLevelOverride: "member"
     },
     {
@@ -4074,7 +4074,7 @@ function getSeedCellManagementRecords() {
       userId: "",
       name: "Edmund Echano",
       cellLeaderUserId: "cell-seed-ferdie",
-      cellLeaderName: "Ptr. Ferdie Tolentino",
+      cellLeaderName: "Ptr. Ferdz Tolentino",
       manualLevelOverride: "member"
     },
     {
@@ -4082,7 +4082,7 @@ function getSeedCellManagementRecords() {
       userId: "",
       name: "Roel Bayonon",
       cellLeaderUserId: "cell-seed-ferdie",
-      cellLeaderName: "Ptr. Ferdie Tolentino",
+      cellLeaderName: "Ptr. Ferdz Tolentino",
       manualLevelOverride: "member"
     }
   ];

@@ -42,10 +42,10 @@ const defaultSeedUsers = [
   },
   {
     id: "ferdie-seed",
-    name: "Ptr. Ferdie Tolentino",
-    username: "Ferdie",
-    usernames: ["Ferdie"],
-    password: "Ferdie",
+    name: "Ptr. Ferdz Tolentino",
+    username: "Ferdz",
+    usernames: ["Ferdz"],
+    password: "Ferdz",
     role: "headAdmin",
     isCreator: false,
     titles: [
@@ -73,13 +73,10 @@ const cellLeadershipOfficeLabels = {
 const cellManagementTreeLevels = [
   { label: "Senior Pastor", slots: ["A1"] },
   { label: "Admin Pastor", slots: ["B1"] },
-  { label: "Ferdie Cell Members", slots: ["C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10", "C11", "C12"] }
+  { label: "Ferdz Cell Members", slots: ["C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10", "C11", "C12"] }
 ];
 
 const loginRequiredCard = document.querySelector("#cell-login-required");
-const sessionBar = document.querySelector("#cell-session-bar");
-const sessionUser = document.querySelector("#cell-session-user");
-const sessionMode = document.querySelector("#cell-session-mode");
 const adminToggle = document.querySelector("#cell-admin-toggle");
 const cellManagementRoot = document.querySelector("#cell-management-root");
 
@@ -298,13 +295,13 @@ function isCreator() {
 function getSeedCellManagementRecords() {
   return [
     { id: "cell-seed-babes", userId: "", name: "Ptra. Babes Dionisio", leadershipOffice: "seniorPastor", manualLevelOverride: "networkLeader" },
-    { id: "cell-seed-ferdie", userId: "ferdie-seed", name: "Ptr. Ferdie Tolentino", leadershipOffice: "adminPastor", cellGroup: "Ferds Flock", manualLevelOverride: "networkLeader" },
-    { id: "cell-seed-reny", userId: "rcb-seed", name: "Reny Borlagdan", leadershipOffice: "cellManager", cellLeaderUserId: "cell-seed-ferdie", cellLeaderName: "Ptr. Ferdie Tolentino", manualLevelOverride: "networkLeader" },
-    { id: "cell-seed-edward", userId: "", name: "Edward Manapol", cellLeaderUserId: "cell-seed-ferdie", cellLeaderName: "Ptr. Ferdie Tolentino", manualLevelOverride: "member" },
-    { id: "cell-seed-charles", userId: "", name: "Charles Francis Echano", cellLeaderUserId: "cell-seed-ferdie", cellLeaderName: "Ptr. Ferdie Tolentino", manualLevelOverride: "member" },
-    { id: "cell-seed-louisse", userId: "", name: "Louisse Encela", cellLeaderUserId: "cell-seed-ferdie", cellLeaderName: "Ptr. Ferdie Tolentino", manualLevelOverride: "member" },
-    { id: "cell-seed-edmund", userId: "", name: "Edmund Echano", cellGroup: "Floodgates Network", cellLeaderUserId: "cell-seed-ferdie", cellLeaderName: "Ptr. Ferdie Tolentino", manualLevelOverride: "member" },
-    { id: "cell-seed-roel", userId: "", name: "Roel Bayonon", cellLeaderUserId: "cell-seed-ferdie", cellLeaderName: "Ptr. Ferdie Tolentino", manualLevelOverride: "member" }
+    { id: "cell-seed-ferdie", userId: "ferdie-seed", name: "Ptr. Ferdz Tolentino", leadershipOffice: "adminPastor", cellGroup: "Ferds Flock", manualLevelOverride: "networkLeader" },
+    { id: "cell-seed-reny", userId: "rcb-seed", name: "Reny Borlagdan", leadershipOffice: "cellManager", cellLeaderUserId: "cell-seed-ferdie", cellLeaderName: "Ptr. Ferdz Tolentino", manualLevelOverride: "networkLeader" },
+    { id: "cell-seed-edward", userId: "", name: "Edward Manapol", cellLeaderUserId: "cell-seed-ferdie", cellLeaderName: "Ptr. Ferdz Tolentino", manualLevelOverride: "member" },
+    { id: "cell-seed-charles", userId: "", name: "Charles Francis Echano", cellLeaderUserId: "cell-seed-ferdie", cellLeaderName: "Ptr. Ferdz Tolentino", manualLevelOverride: "member" },
+    { id: "cell-seed-louisse", userId: "", name: "Louisse Encela", cellLeaderUserId: "cell-seed-ferdie", cellLeaderName: "Ptr. Ferdz Tolentino", manualLevelOverride: "member" },
+    { id: "cell-seed-edmund", userId: "", name: "Edmund Echano", cellGroup: "Floodgates Network", cellLeaderUserId: "cell-seed-ferdie", cellLeaderName: "Ptr. Ferdz Tolentino", manualLevelOverride: "member" },
+    { id: "cell-seed-roel", userId: "", name: "Roel Bayonon", cellLeaderUserId: "cell-seed-ferdie", cellLeaderName: "Ptr. Ferdz Tolentino", manualLevelOverride: "member" }
   ];
 }
 
@@ -942,17 +939,8 @@ function renderCellManagementTree(records, canManage) {
                 return `
                   <article class="cell-tree-node" title="${escapeHtml(hoverStats)}">
                     <strong>${escapeHtml(slotId)}</strong>
-                    <button class="ghost-btn cell-tree-name-link" type="button" data-record-id="${escapeHtml(assigned?.id || "")}" ${assigned ? "" : "disabled"}>${escapeHtml(assigned?.name || "Empty slot")}</button>
+                    <button class="cell-tree-name-link" type="button" data-record-id="${escapeHtml(assigned?.id || "")}" ${assigned ? "" : "disabled"}>${escapeHtml(assigned?.name || "Empty slot")}</button>
                     <div class="person-schedule-meta">${escapeHtml(summary)}</div>
-                    ${canManage && (slotId.startsWith("C") || canEditProtectedRecord(assigned)) ? `
-                      <select class="cell-tree-select" data-slot-id="${escapeHtml(slotId)}">
-                        ${buildAssignableSelectionOptions(getSelectableExistingMemberRecords(assigned?.id || ""), availableProfiles, assigned?.id || "", "Assign record")}
-                      </select>
-                      <div class="admin-actions">
-                        <button class="secondary-btn cell-tree-save" type="button" data-slot-id="${escapeHtml(slotId)}">Save</button>
-                        <button class="ghost-btn cell-tree-clear" type="button" data-slot-id="${escapeHtml(slotId)}">Clear</button>
-                      </div>
-                    ` : ""}
                   </article>
                 `;
               }).join("")}
@@ -1068,7 +1056,7 @@ function buildLeaderWorkspace(selectedLeader, canManage) {
               return `
                 <article class="cell-tree-node" title="${escapeHtml(assigned ? `${assigned.name} | ${getCellDiscipleshipLabel(assigned.discipleshipLevel)}` : `${slotId} is currently unassigned.`)}">
                   <strong>${escapeHtml(slotId)}</strong>
-                  <button class="ghost-btn cell-tree-name-link" type="button" data-record-id="${escapeHtml(assigned?.id || "")}" ${assigned ? "" : "disabled"}>${escapeHtml(assigned?.name || "Empty slot")}</button>
+                  <button class="cell-tree-name-link" type="button" data-record-id="${escapeHtml(assigned?.id || "")}" ${assigned ? "" : "disabled"}>${escapeHtml(assigned?.name || "Empty slot")}</button>
                   <div class="person-schedule-meta">${escapeHtml(assigned ? (assigned.effectiveCellGroup || getCellDiscipleshipLabel(assigned.discipleshipLevel)) : "Open position")}</div>
                   ${canManage && !isProtected ? `
                     <select class="leader-network-select" data-leader-id="${escapeHtml(selectedLeader.id)}" data-slot-id="${escapeHtml(slotId)}">
@@ -1435,59 +1423,17 @@ function bindEditableControls() {
     });
   });
 
-  cellManagementRoot.querySelectorAll(".cell-tree-save").forEach((button) => {
-    button.addEventListener("click", () => {
-      const slotId = button.dataset.slotId;
-      const selectedValue = cellManagementRoot.querySelector(`.cell-tree-select[data-slot-id="${cssEscape(slotId)}"]`)?.value || "";
-      const defaultLeaderId = slotId.startsWith("C") ? "cell-seed-ferdie" : "";
-      const recordId = resolveAssignableSelection(selectedValue, { cellLeaderUserId: defaultLeaderId });
-      if (recordId && defaultLeaderId) {
-        updateCellRecord(recordId, (record) => ({
-          ...record,
-          cellLeaderUserId: defaultLeaderId
-        }));
-      } else {
-        cellManagementState.treeAssignments = { ...(cellManagementState.treeAssignments ?? {}), [slotId]: recordId };
-        persistCellManagement();
-      }
-      renderWorkspace();
-    });
-  });
-
-  cellManagementRoot.querySelectorAll(".cell-tree-clear").forEach((button) => {
-    button.addEventListener("click", () => {
-      const slotId = button.dataset.slotId;
-      if (slotId.startsWith("C")) {
-        const assigned = getCellTreeAssignedRecord(slotId);
-        if (assigned) {
-          updateCellRecord(assigned.id, (record) => ({
-            ...record,
-            cellLeaderUserId: ""
-          }));
-        }
-        renderWorkspace();
-        return;
-      }
-      const nextAssignments = { ...(cellManagementState.treeAssignments ?? {}) };
-      delete nextAssignments[slotId];
-      cellManagementState.treeAssignments = nextAssignments;
-      persistCellManagement();
-      renderWorkspace();
-    });
-  });
 }
 
 function renderWorkspace() {
   if (!currentUser) {
     loginRequiredCard.classList.remove("app-hidden");
-    sessionBar.classList.add("app-hidden");
     cellManagementRoot.classList.add("app-hidden");
     adminToggle.hidden = true;
     return;
   }
 
   loginRequiredCard.classList.add("app-hidden");
-  sessionBar.classList.remove("app-hidden");
   cellManagementRoot.classList.remove("app-hidden");
 
   syncCellManagementRecords();
@@ -1500,8 +1446,6 @@ function renderWorkspace() {
 
   adminToggle.hidden = !canOpenAdminTools;
   adminToggle.textContent = adminMode ? "Turn Off Admin" : "Turn On Admin";
-  sessionUser.textContent = currentUser.name || currentUser.username || "Signed in";
-  sessionMode.textContent = adminMode && canOpenAdminTools ? "Admin mode" : "View mode";
 
   const canManage = canOpenAdminTools && adminMode;
   const availableProfiles = getManagedCellProfiles();
@@ -1515,9 +1459,41 @@ function renderWorkspace() {
   const sortedCellRecords = sortCellManagementRecords(cellManagementState.records ?? []).filter((record) =>
     ["visitor", "member"].includes(record.discipleshipLevel)
   );
+  const vipRecords = sortCellManagementRecords(cellManagementState.records ?? []).filter((record) => record.discipleshipLevel === "visitor");
 
   cellManagementRoot.innerHTML = `
     <div class="cell-page-grid">
+      <section class="shell-card">
+        <div class="section-heading">
+          <div>
+            <p class="mini-label">VIP Count</p>
+            <h2>${vipRecords.length}</h2>
+          </div>
+        </div>
+        <div class="admin-readonly-meta">VIP means current visitors in the discipleship flow.</div>
+      </section>
+      <section class="shell-card">
+        <div class="section-heading">
+          <div>
+            <p class="mini-label">VIP List</p>
+            <h2>Current VIPs</h2>
+          </div>
+        </div>
+        ${vipRecords.length ? `
+          <div class="admin-list">
+            ${vipRecords.map((record) => `
+              <article class="managed-ministry-row">
+                <button class="cell-tree-name-link inline-name-link" type="button" data-record-id="${escapeHtml(record.id)}">${escapeHtml(record.name)}</button>
+                <div class="admin-readonly-meta">
+                  <div>Invited By: ${escapeHtml(record.invitedByName || "-")}</div>
+                  <div>Consolidator: ${escapeHtml(record.consolidatorName || "-")}</div>
+                  <div>Network: ${escapeHtml(record.effectiveCellGroup || "-")}</div>
+                </div>
+              </article>
+            `).join("")}
+          </div>
+        ` : `<div class="empty-card">No VIPs recorded right now.</div>`}
+      </section>
       ${renderCellManagementTree(cellManagementState.records ?? [], canManage)}
       ${buildLeaderWorkspace(selectedLeader, canManage)}
       <section class="shell-card">
@@ -1559,11 +1535,11 @@ function renderWorkspace() {
                   ];
                   return `
                     <tr>
-                      <td><button class="ghost-btn cell-tree-name-link inline-name-link" type="button" data-record-id="${escapeHtml(record.id)}"><strong>${escapeHtml(record.name)}</strong></button></td>
+                      <td><button class="cell-tree-name-link inline-name-link" type="button" data-record-id="${escapeHtml(record.id)}"><strong>${escapeHtml(record.name)}</strong></button></td>
                       <td>${escapeHtml(priorityLabel)}</td>
                       <td>${escapeHtml(record.invitedByName || "-")}</td>
                       <td>${escapeHtml(record.consolidatorName || "-")}</td>
-                      <td>${hideCellLeader || !linkedLeader ? escapeHtml("-") : `<button class="ghost-btn cell-tree-name-link inline-name-link" type="button" data-record-id="${escapeHtml(linkedLeader.id)}">${escapeHtml(record.cellLeaderName || "-")}</button>`}</td>
+                      <td>${hideCellLeader || !linkedLeader ? escapeHtml("-") : `<button class="cell-tree-name-link inline-name-link" type="button" data-record-id="${escapeHtml(linkedLeader.id)}">${escapeHtml(record.cellLeaderName || "-")}</button>`}</td>
                       <td>${escapeHtml(record.effectiveCellGroup || "-")}</td>
                       <td>${escapeHtml(progressParts.join(" | "))}</td>
                       <td>${escapeHtml(getInvitedVisitorsForRecord(record.id).map((entry) => entry.name).join(", ") || "-")}</td>
