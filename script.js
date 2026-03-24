@@ -153,9 +153,10 @@ const defaultAuth = {
 function normalizeMusicianAssignments(assignments, fallbackNames = []) {
   const normalized = createEmptyMusicianAssignments();
   const incoming = assignments && typeof assignments === "object" ? assignments : {};
+  const hasNamedAssignments = musicianRoleDefinitions.some((role) => String(incoming[role.key]?.name || "").trim());
   musicianRoleDefinitions.forEach((role, index) => {
     const entry = incoming[role.key] ?? {};
-    const fallbackName = Array.isArray(fallbackNames) ? (fallbackNames[index] || "") : "";
+    const fallbackName = !hasNamedAssignments && Array.isArray(fallbackNames) ? (fallbackNames[index] || "") : "";
     normalized[role.key] = {
       name: String(entry.name || fallbackName || "").trim()
     };
