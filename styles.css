@@ -1655,6 +1655,36 @@ select:focus,
   gap: 8px;
 }
 
+.musician-role-panel {
+  padding-top: 10px;
+}
+
+.musician-role-list {
+  display: grid;
+  gap: 12px;
+  min-width: min(100%, 320px);
+}
+
+.musician-role-row {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.musician-role-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+}
+
+.musician-none-row {
+  font-size: 0.82rem;
+}
+
 .tag-label {
   display: inline-flex;
   align-items: center;

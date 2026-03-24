@@ -24,6 +24,17 @@ const registryMeta = {
   musicians: "Musicians"
 };
 
+const musicianRoleDefinitions = [
+  { key: "bassist", label: "Bassist" },
+  { key: "guitarist", label: "Guitarist" },
+  { key: "keyboard", label: "Keyboard" },
+  { key: "drummer", label: "Drummer" }
+];
+
+function createEmptyMusicianAssignments() {
+  return Object.fromEntries(musicianRoleDefinitions.map((role) => [role.key, { name: "", none: false }]));
+}
+
 const roleLabels = {
   headAdmin: "Head Admin",
   admin: "Admin",
@@ -80,8 +91,8 @@ const defaultState = {
   },
   daList: [],
   services: {
-    saturday: { id: "saturday", label: "Adonai", title: "Adonai Only", date: "", worshipLeader: "", backup: [], musicians: [] },
-    sunday: { id: "sunday", label: "Sunday Service", title: "Sunday Service Only", date: "", worshipLeader: "", backup: [], musicians: [] }
+    saturday: { id: "saturday", label: "Adonai", title: "Adonai Only", date: "", worshipLeader: "", backup: [], musicians: [], musicianAssignments: createEmptyMusicianAssignments() },
+    sunday: { id: "sunday", label: "Sunday Service", title: "Sunday Service Only", date: "", worshipLeader: "", backup: [], musicians: [], musicianAssignments: createEmptyMusicianAssignments() }
   }
 };
 
@@ -136,6 +147,29 @@ const defaultAuth = {
   usernameRequests: [],
   ministries: defaultMinistries
 };
+
+function normalizeMusicianAssignments(assignments, fallbackNames = []) {
+  const normalized = createEmptyMusicianAssignments();
+  const incoming = assignments && typeof assignments === "object" ? assignments : {};
+  musicianRoleDefinitions.forEach((role, index) => {
+    const entry = incoming[role.key] ?? {};
+    const fallbackName = Array.isArray(fallbackNames) ? (fallbackNames[index] || "") : "";
+    normalized[role.key] = {
+      name: String(entry.name || fallbackName || "").trim(),
+      none: Boolean(entry.none)
+    };
+    if (normalized[role.key].none) {
+      normalized[role.key].name = "";
+    }
+  });
+  return normalized;
+}
+
+function getMusicianAssignmentNames(assignments) {
+  return musicianRoleDefinitions
+    .map((role) => assignments?.[role.key]?.name || "")
+    .filter(Boolean);
+}
 
 const announcementBoardMeta = {
   home: { label: "Home", ministry: "Emcee", grantMinistries: ["Emcee", "Info (3 branches)"] },
@@ -3360,7 +3394,7 @@ function renderUpcomingOrganizerSchedule() {
       <div class="person-schedule-meta">${escapeHtml(formatValue("date", entry.date))}</div>
       <div>${escapeHtml(entry.worshipLeader || "No worship leader assigned")}</div>
       <div>${escapeHtml(formatValue("backup", entry.backup))}</div>
-      <div>${escapeHtml(formatValue("musicians", entry.musicians))}</div>
+      <div>${escapeHtml(formatValue("musicians", entry.musicianAssignments || entry.musicians))}</div>
     `;
     if (canEditOrganizer()) {
       const selectEntry = () => {
@@ -3478,7 +3512,7 @@ function renderServices() {
     bindServiceDateSelect(section, service);
     bindRoleSelect(section, service, ".worshipLeader", getEffectiveRegistryEntries("worshipLeaders", syncedRegistry));
     bindBackupMultiSelect(section, service, syncedRegistry);
-    bindMusicianMultiSelect(section, service, Infinity, ".musicians-options", ".musicians-selected", ".multi-summary", syncedRegistry);
+    bindMusicianRolePanel(section, service, syncedRegistry);
     updateConflictDisplay(section, service);
     applyOrganizerPermissions(section, editingEnabled);
 
@@ -3581,8 +3615,92 @@ function bindBackupMultiSelect(section, service, syncedRegistry = getPawProfileR
   bindLimitedMultiSelect(section, service, "backup", getBackupOptions(syncedRegistry), Infinity, ".backups-options", ".backups-selected", ".backup-summary", "Select backups", "backup", true);
 }
 
-function bindMusicianMultiSelect(section, service, limit, optionsSelector, selectedSelector, summarySelector, syncedRegistry = getPawProfileRegistryNames()) {
-  bindLimitedMultiSelect(section, service, "musicians", getAssignableNames(getEffectiveRegistryEntries("musicians", syncedRegistry)), limit, optionsSelector, selectedSelector, summarySelector, "Select musicians", "musician", false);
+function bindMusicianRolePanel(section, service, syncedRegistry = getPawProfileRegistryNames()) {
+  const roleList = section.querySelector(".musician-role-list");
+  const summary = section.querySelector(".musicians-summary");
+  const selectedWrap = section.querySelector(".musicians-selected");
+  if (!roleList || !summary || !selectedWrap) {
+    return;
+  }
+
+  const options = getAssignableNames(getEffectiveRegistryEntries("musicians", syncedRegistry));
+  const assignments = normalizeMusicianAssignments(service.musicianAssignments, service.musicians);
+  roleList.innerHTML = "";
+
+  musicianRoleDefinitions.forEach((role) => {
+    const row = document.createElement("div");
+    row.className = "musician-role-row";
+    const selectedName = assignments[role.key]?.name || "";
+    const noOneAssigned = Boolean(assignments[role.key]?.none);
+    row.innerHTML = `
+      <div class="musician-role-head">
+        <strong>${escapeHtml(role.label)}</strong>
+        <label class="option-row musician-none-row">
+          <input type="checkbox" class="musician-none-toggle" data-role-key="${escapeHtml(role.key)}" ${noOneAssigned ? "checked" : ""}>
+          <span>No one assigned</span>
+        </label>
+      </div>
+      <select class="musician-role-select-input" data-role-key="${escapeHtml(role.key)}" ${noOneAssigned ? "disabled" : ""}>
+        <option value="">Select ${escapeHtml(role.label)}</option>
+        ${options.map((name) => `<option value="${escapeHtml(name)}" ${samePerson(name, selectedName) ? "selected" : ""}>${escapeHtml(getDisplayName(name))}</option>`).join("")}
+      </select>
+    `;
+
+    const select = row.querySelector(".musician-role-select-input");
+    const toggle = row.querySelector(".musician-none-toggle");
+
+    const applyAssignments = (nextAssignments) => {
+      state.services[service.id].musicianAssignments = normalizeMusicianAssignments(nextAssignments);
+      state.services[service.id].musicians = getMusicianAssignmentNames(state.services[service.id].musicianAssignments);
+      upsertHistoryForService(service.id);
+      persistOrganizer();
+      renderServices();
+    };
+
+    select?.addEventListener("change", (event) => {
+      const nextAssignments = normalizeMusicianAssignments(assignments);
+      nextAssignments[role.key] = { name: event.target.value, none: false };
+      const nextValues = getMusicianAssignmentNames(nextAssignments);
+
+      const duplicateMessage = getSameServiceDuplicateMessage(service.id, "musicians", event.target.value);
+      if (event.target.value && duplicateMessage) {
+        event.target.value = selectedName;
+        window.alert(duplicateMessage);
+        return;
+      }
+
+      const duplicateRole = nextValues.find((name, index) => name && nextValues.findIndex((other) => samePerson(other, name)) !== index);
+      if (duplicateRole) {
+        event.target.value = selectedName;
+        window.alert(`${getDisplayName(duplicateRole)} is already assigned to another musician position in this service.`);
+        return;
+      }
+
+      const conflictMessages = getAssignmentConflictMessages(service.id, "musicians", nextValues);
+      if (conflictMessages.length > 0) {
+        const proceed = window.confirm(`${conflictMessages.join("\n\n")}\n\nAre you sure you want to continue with this assignment?`);
+        if (!proceed) {
+          event.target.value = selectedName;
+          return;
+        }
+      }
+
+      applyAssignments(nextAssignments);
+    });
+
+    toggle?.addEventListener("change", (event) => {
+      const nextAssignments = normalizeMusicianAssignments(assignments);
+      nextAssignments[role.key] = {
+        name: "",
+        none: event.target.checked
+      };
+      applyAssignments(nextAssignments);
+    });
+
+    roleList.appendChild(row);
+  });
+
+  updateMusicianSummary(summary, selectedWrap, assignments);
 }
 
 function bindLimitedMultiSelect(section, service, key, options, limit, optionsSelector, selectedSelector, summarySelector, emptyLabel, unitLabel, rerenderOnChange) {
@@ -3750,6 +3868,24 @@ function updateSelectedItems(container, summary, names, emptyLabel, unitLabel) {
   container.innerHTML = list.length > 0
     ? list.map((name) => `<span class="selected-pill">${buildDisplayNameMarkup(name)}</span>`).join("")
     : `<span class="empty-state">No ${unitLabel}${unitLabel.endsWith("s") ? "" : "s"} assigned.</span>`;
+}
+
+function updateMusicianSummary(summary, container, assignments) {
+  const assignedNames = getMusicianAssignmentNames(assignments);
+  summary.textContent = assignedNames.length > 0 ? `${assignedNames.length} musician${assignedNames.length > 1 ? "s" : ""} selected` : "Select Musicians";
+  const rows = musicianRoleDefinitions.map((role) => {
+    const entry = assignments?.[role.key] ?? { name: "", none: false };
+    if (entry.none) {
+      return `<span class="selected-pill">${escapeHtml(role.label)}: None</span>`;
+    }
+    if (entry.name) {
+      return `<span class="selected-pill">${escapeHtml(role.label)}: ${buildDisplayNameMarkup(entry.name)}</span>`;
+    }
+    return "";
+  }).filter(Boolean);
+  container.innerHTML = rows.length > 0
+    ? rows.join("")
+    : `<span class="empty-state">No musicians assigned.</span>`;
 }
 
 function updateConflictDisplay(section, service) {
@@ -4025,7 +4161,7 @@ function exportRangePdf(startDateValue, monthsValue, serviceFilter = "") {
       <td>${escapeHtml(entry.label)}</td>
       <td>${escapeHtml(formatValue("worshipLeader", entry.worshipLeader))}</td>
       <td>${escapeHtml(formatValue("backup", entry.backup))}</td>
-      <td>${escapeHtml(formatValue("musicians", entry.musicians))}</td>
+      <td>${escapeHtml(formatValue("musicians", entry.musicianAssignments || entry.musicians))}</td>
     </tr>
   `).join("");
 
@@ -4203,10 +4339,18 @@ function loadState() {
 
   try {
     const parsed = JSON.parse(saved);
+    const services = Object.fromEntries(Object.entries({ ...structuredClone(defaultState.services), ...parsed.services }).map(([serviceId, service]) => {
+      const musicianAssignments = normalizeMusicianAssignments(service?.musicianAssignments, service?.musicians);
+      return [serviceId, {
+        ...service,
+        musicians: getMusicianAssignmentNames(musicianAssignments),
+        musicianAssignments
+      }];
+    }));
     return {
       registries: Object.fromEntries(Object.keys(registryMeta).map((key) => [key, sortEntries(parsed.registries?.[key] ?? defaultState.registries[key])])),
       daList: sortEntries(parsed.daList ?? parsed.pastorRequests ?? defaultState.daList),
-      services: { ...structuredClone(defaultState.services), ...parsed.services }
+      services
     };
   } catch (error) {
     console.warn("Could not parse saved roster state. Using a clean state.", error);
@@ -6171,7 +6315,8 @@ function createHistorySnapshot(service) {
     date: normalizeDate(service.date),
     worshipLeader: service.worshipLeader ?? "",
     backup: [...(service.backup ?? [])],
-    musicians: [...(service.musicians ?? [])]
+    musicians: [...(service.musicians ?? [])],
+    musicianAssignments: normalizeMusicianAssignments(service.musicianAssignments, service.musicians)
   };
 }
 
@@ -6188,7 +6333,8 @@ function normalizeHistoryEntry(entry) {
     date: normalizeDate(entry.date),
     worshipLeader: entry.worshipLeader ?? "",
     backup: Array.isArray(entry.backup) ? entry.backup : entry.backup ? [entry.backup] : [],
-    musicians: Array.isArray(entry.musicians) ? entry.musicians : []
+    musicians: Array.isArray(entry.musicians) ? entry.musicians : [],
+    musicianAssignments: normalizeMusicianAssignments(entry.musicianAssignments, entry.musicians)
   };
 }
 
@@ -6216,6 +6362,20 @@ function getEarliestKnownDate() {
 }
 
 function formatValue(key, value) {
+  if (key === "musicians" && value && typeof value === "object" && !Array.isArray(value)) {
+    const rows = musicianRoleDefinitions.map((role) => {
+      const entry = value[role.key] ?? { name: "", none: false };
+      if (entry.none) {
+        return `${role.label}: None`;
+      }
+      if (entry.name) {
+        return `${role.label}: ${getDisplayName(entry.name)}`;
+      }
+      return "";
+    }).filter(Boolean);
+    return rows.length > 0 ? rows.join(", ") : "Not assigned yet";
+  }
+
   if (Array.isArray(value)) {
     return value.length > 0 ? value.map((entry) => getDisplayName(entry)).join(", ") : "Not assigned yet";
   }
