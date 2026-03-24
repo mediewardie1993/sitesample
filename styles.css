@@ -1089,7 +1089,9 @@ code {
 .cell-standalone-shell .shell-card {
   width: 100%;
   border: 0;
-  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.14);
+  box-shadow: none;
+  background: transparent;
+  backdrop-filter: none;
 }
 
 .cell-management-actions {
