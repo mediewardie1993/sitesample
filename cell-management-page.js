@@ -121,7 +121,7 @@ function isExcludedLegacyOrTestAccount(user) {
   const usernames = (Array.isArray(user?.usernames) ? user.usernames : [user?.username].filter(Boolean))
     .map((value) => String(value));
   const name = String(user?.name ?? "");
-  const removableSeedUsernames = ["admin", "medward", "medwardhead", "medwardadmin", "medwardmember1", "medwardmember2", "medwardvisitor"];
+  const removableSeedUsernames = ["admin", "medwardhead", "medwardadmin", "medwardmember1", "medwardmember2", "medwardvisitor"];
   const testPattern = /test(head|assistant|primary|officer|member)$/i;
 
   return Boolean(
