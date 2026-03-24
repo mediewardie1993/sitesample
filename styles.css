@@ -1126,6 +1126,20 @@ body.organizer-embed-mode {
   gap: 16px;
 }
 
+.organizer-embed-mode #section-organizer > .organizer-upcoming-card,
+.organizer-embed-mode #section-organizer > .organizer-person-card,
+.organizer-embed-mode #section-organizer > .organizer-grid > .compact-registry {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  padding: 0;
+}
+
+.organizer-embed-mode #section-organizer > .organizer-grid {
+  gap: 20px;
+}
+
 .cell-management-actions {
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   align-items: center;
@@ -1738,6 +1752,11 @@ select:focus,
 .musician-role-done {
   justify-self: start;
   margin-top: 4px;
+}
+
+.musicians-selected {
+  min-height: 34px;
+  align-items: flex-start;
 }
 
 .tag-label {
