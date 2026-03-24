@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260325zf">
+  <link rel="stylesheet" href="styles.css?v=20260325zg">
 </head>
 <body class="standalone-page">
   <main class="standalone-shell paw-standalone-shell">
@@ -41,6 +41,20 @@
       try {
         const doc = pawEmbedFrame.contentDocument;
         if (!doc || !doc.body) return;
+        const loginGate = doc.querySelector("#login-gate");
+        const loginGateVisible = Boolean(loginGate && !loginGate.classList.contains("app-hidden"));
+        if (loginGateVisible) {
+          const loginHeight = Math.max(
+            loginGate.scrollHeight,
+            loginGate.getBoundingClientRect().height,
+            980
+          );
+          if (Math.abs(loginHeight - pawEmbedLastHeight) > 8) {
+            pawEmbedLastHeight = loginHeight;
+            pawEmbedFrame.style.height = `${loginHeight}px`;
+          }
+          return;
+        }
         const appShell = doc.querySelector("#app-shell");
         const organizerSection = doc.querySelector("#section-organizer");
         const openMusicianPanels = doc.querySelectorAll(".musician-role-select[open]").length;
