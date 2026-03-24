@@ -844,7 +844,7 @@ code {
 
 .standalone-shell {
   width: min(1180px, calc(100% - 32px));
-  margin: 28px auto 40px;
+  margin: 40px auto 56px;
   display: grid;
   gap: 16px;
 }
@@ -885,7 +885,7 @@ code {
   display: block;
   width: 100%;
   min-height: 0;
-  height: 1800px;
+  height: 2700px;
   border: 0;
   background: transparent;
   overflow: hidden;
@@ -1138,6 +1138,7 @@ body.organizer-embed-mode {
 
 .organizer-embed-mode #section-organizer {
   gap: 16px;
+  padding-bottom: 340px;
 }
 
 .organizer-embed-mode #section-organizer > .organizer-upcoming-card,

@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260325w">
+  <link rel="stylesheet" href="styles.css?v=20260325zd">
 </head>
 <body class="standalone-page">
   <main class="standalone-shell paw-standalone-shell">
@@ -43,6 +43,7 @@
         if (!doc || !doc.body) return;
         const appShell = doc.querySelector("#app-shell");
         const organizerSection = doc.querySelector("#section-organizer");
+        const openMusicianPanels = doc.querySelectorAll(".musician-role-select[open]").length;
         const nextHeight = organizerSection
           ? Math.max(organizerSection.scrollHeight, organizerSection.getBoundingClientRect().height)
           : appShell
@@ -52,7 +53,7 @@
               doc.documentElement ? doc.documentElement.scrollHeight : 0,
               doc.body.offsetHeight
             );
-        const targetHeight = Math.max(nextHeight + 180, 1800);
+        const targetHeight = Math.max(nextHeight + 520 + (openMusicianPanels * 200), 2700);
         if (Math.abs(targetHeight - pawEmbedLastHeight) > 8) {
           pawEmbedLastHeight = targetHeight;
           pawEmbedFrame.style.height = `${targetHeight}px`;
@@ -74,6 +75,7 @@
           childList: true,
           subtree: true
         });
+        doc.addEventListener("toggle", () => window.requestAnimationFrame(resizePawEmbed), true);
         win?.addEventListener("resize", resizePawEmbed);
       } catch (error) {
         // Ignore observer failures in fallback states.
