@@ -26,7 +26,7 @@ const defaultSeedUsers = [
   },
   {
     id: "rcb-seed",
-    name: "RCB",
+    name: "Reny Borlagdan",
     username: "RCB",
     usernames: ["RCB"],
     password: "RCB",
@@ -36,7 +36,9 @@ const defaultSeedUsers = [
       { scope: "platform", role: "admin", ministry: "" }
     ],
     ministries: [],
-    profile: {}
+    profile: {
+      networkName: "Renygades Network"
+    }
   },
   {
     id: "ferdie-seed",
@@ -296,7 +298,7 @@ function getSeedCellManagementRecords() {
   return [
     { id: "cell-seed-babes", userId: "", name: "Ptra. Babes Dionisio", leadershipOffice: "seniorPastor", manualLevelOverride: "networkLeader" },
     { id: "cell-seed-ferdie", userId: "ferdie-seed", name: "Ptr. Ferdie Tolentino", leadershipOffice: "adminPastor", cellGroup: "Ferds Flock", manualLevelOverride: "networkLeader" },
-    { id: "cell-seed-reny", userId: "", name: "Reny Borlagdan", leadershipOffice: "cellManager", cellGroup: "Renygades Network", cellLeaderUserId: "cell-seed-ferdie", cellLeaderName: "Ptr. Ferdie Tolentino", manualLevelOverride: "member" },
+    { id: "cell-seed-reny", userId: "rcb-seed", name: "Reny Borlagdan", leadershipOffice: "cellManager", cellLeaderUserId: "cell-seed-ferdie", cellLeaderName: "Ptr. Ferdie Tolentino", manualLevelOverride: "networkLeader" },
     { id: "cell-seed-edward", userId: "", name: "Edward Manapol", cellLeaderUserId: "cell-seed-ferdie", cellLeaderName: "Ptr. Ferdie Tolentino", manualLevelOverride: "member" },
     { id: "cell-seed-charles", userId: "", name: "Charles Francis Echano", cellLeaderUserId: "cell-seed-ferdie", cellLeaderName: "Ptr. Ferdie Tolentino", manualLevelOverride: "member" },
     { id: "cell-seed-louisse", userId: "", name: "Louisse Encela", cellLeaderUserId: "cell-seed-ferdie", cellLeaderName: "Ptr. Ferdie Tolentino", manualLevelOverride: "member" },

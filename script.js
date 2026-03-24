@@ -103,7 +103,7 @@ const defaultAuth = {
   },
   {
     id: "rcb-seed",
-    name: "RCB",
+    name: "Reny Borlagdan",
     username: "RCB",
     usernames: ["RCB"],
     password: "RCB",
@@ -113,7 +113,9 @@ const defaultAuth = {
       { scope: "platform", role: "admin", ministry: "" }
     ],
     ministries: [],
-    profile: {}
+    profile: {
+      networkName: "Renygades Network"
+    }
   },
   {
     id: "ferdie-seed",
@@ -4036,12 +4038,12 @@ function getSeedCellManagementRecords() {
     },
     {
       id: "cell-seed-reny",
-      userId: "",
+      userId: "rcb-seed",
       name: "Reny Borlagdan",
       leadershipOffice: "cellManager",
       cellLeaderUserId: "cell-seed-ferdie",
       cellLeaderName: "Ptr. Ferdie Tolentino",
-      manualLevelOverride: "member"
+      manualLevelOverride: "networkLeader"
     },
     {
       id: "cell-seed-edward",
