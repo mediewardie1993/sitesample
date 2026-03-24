@@ -25,6 +25,22 @@ function attachOrganizerSectionToMinistryDetail() {
   ministryOrganizerSection.classList.remove("app-hidden");
 }
 
+function buildCellManagementPanel() {
+  if (typeof renderCellManagementWorkspace === "function") {
+    return renderCellManagementWorkspace();
+  }
+
+  const fallback = document.createElement("section");
+  fallback.className = "managed-ministry-row ministry-card";
+  fallback.innerHTML = `
+    <div class="ministry-card-head">
+      <strong>Cell Management Page</strong>
+    </div>
+    <p class="ministry-card-copy">Cell Management tools are loading.</p>
+  `;
+  return fallback;
+}
+
 function getAnnouncementBoardConfig(sectionKey) {
   if (sectionKey === "ministryDetail") {
     const ministry = selectedMinistryPage || "Ministry";
@@ -66,6 +82,9 @@ function renderMinistriesPage() {
     if (openButton) {
       openButton.addEventListener("click", () => {
         selectedMinistryPage = ministry;
+        if (typeof persistSelectedMinistryPage === "function") {
+          persistSelectedMinistryPage();
+        }
         activeSection = "ministryDetail";
         renderSections();
         renderMinistryDetailPage();
@@ -81,7 +100,13 @@ function renderMinistryDetailPage() {
     return;
   }
 
-  const ministry = selectedMinistryPage || "Ministry";
+  const ministry = typeof normalizeMinistryName === "function"
+    ? normalizeMinistryName(selectedMinistryPage || "Ministry")
+    : (selectedMinistryPage || "Ministry");
+  selectedMinistryPage = ministry;
+  if (typeof persistSelectedMinistryPage === "function") {
+    persistSelectedMinistryPage();
+  }
   ministryDetailTitle.textContent = ministry;
   ministryDetailBoardTitle.textContent = `${ministry} Board`;
   ministryDetailCopy.textContent = "General announcements from Stage Management and upper admins also appear here.";
@@ -90,13 +115,12 @@ function renderMinistryDetailPage() {
   detachOrganizerSection();
 
   if (ministry === "Praise And Worship Team") {
-    const copy = document.createElement("p");
-    copy.className = "mode-note";
-    copy.textContent = canEditOrganizer()
-      ? "You can manage the schedule here in admin mode."
-      : "The schedule is managed from admin mode by Praise and Worship Team heads, assistants, and upper admins.";
-    ministryDetailExtra.append(copy);
     attachOrganizerSectionToMinistryDetail();
     renderOrganizer();
+    return;
+  }
+
+  if (ministry === "Cell Management") {
+    ministryDetailExtra.appendChild(buildCellManagementPanel());
   }
 }

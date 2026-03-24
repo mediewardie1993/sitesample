@@ -247,6 +247,13 @@ code {
   padding: 22px 24px;
 }
 
+.organizer-hero {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
 .site-header,
 .site-nav {
   display: flex;
@@ -993,6 +1000,82 @@ code {
   background: rgba(255, 255, 255, 0.03);
 }
 
+.cell-management-workspace {
+  display: grid;
+  gap: 18px;
+  width: 100%;
+}
+
+.cell-management-actions {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  align-items: center;
+}
+
+.cell-tree {
+  display: grid;
+  gap: 22px;
+}
+
+.cell-tree-level {
+  display: grid;
+  gap: 12px;
+  justify-items: center;
+}
+
+.cell-tree-level-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.cell-tree-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.cell-tree-node {
+  display: grid;
+  gap: 5px;
+  width: min(142px, 100%);
+  min-height: 104px;
+  padding: 10px 9px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.03);
+  justify-items: center;
+  text-align: center;
+}
+
+.cell-tree-node strong {
+  font-size: 0.8rem;
+}
+
+.cell-tree-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.cell-tree-node .person-schedule-meta {
+  text-align: center;
+  font-size: 0.7rem;
+  line-height: 1.15;
+}
+
+.cell-tree-node select,
+.cell-tree-node .admin-actions button {
+  font-size: 0.72rem;
+}
+
+.cell-tree-node .admin-actions {
+  gap: 6px;
+}
+
 .photo-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -1155,7 +1238,25 @@ code {
 }
 
 .section-heading h2 {
-  font-size: 1.95rem;
+  font-size: 1.65rem;
+  line-height: 1.16;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+#section-organizer .section-heading h2 {
+  font-size: 1.32rem;
+  margin-right: 10px;
+}
+
+.organizer-upcoming-card .section-heading > div {
+  max-width: calc(100% - 18px);
+  padding-right: 12px;
+}
+
+.organizer-person-card .section-heading > div {
+  max-width: calc(100% - 18px);
+  padding-right: 12px;
 }
 
 .compact-registry {

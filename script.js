@@ -11,7 +11,10 @@ const SEAT_LAYOUT_KEY = "jccm-seat-layout-v1";
 const SEAT_EVENTS_KEY = "jccm-seat-events-v1";
 const ACTIVE_SEAT_EVENT_KEY = "jccm-active-seat-event-v1";
 const ACTIVE_SECTION_KEY = "jccm-active-section-v1";
+const SELECTED_MINISTRY_PAGE_KEY = "jccm-selected-ministry-page-v1";
+const ADMIN_MODE_KEY = "jccm-admin-mode-v1";
 const SEAT_RESET_KEY = "jccm-seat-layout-last-reset-v1";
+const CELL_MANAGEMENT_KEY = "jccm-cell-management-v1";
 const SUPABASE_URL = "https://gxgdetvlehwlxsenpijn.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_IAmOapMof9S8qv-rX8WoLg_fBXDqBTs";
 
@@ -114,7 +117,7 @@ const defaultAuth = {
   },
   {
     id: "ferdie-seed",
-    name: "Ferdie",
+    name: "Ptr. Ferdie Tolentino",
     username: "Ferdie",
     usernames: ["Ferdie"],
     password: "Ferdie",
@@ -450,19 +453,20 @@ let fixedPhotos = loadFixedPhotos();
 let photoUploadGrants = loadPhotoUploadGrants();
 let currentUser = restoreSession();
 let activeSection = restoreActiveSection();
-let adminMode = false;
+let adminMode = restoreAdminMode();
 let carouselIndexes = { sunday: 0, adonai: 0, hamakom: 0, agape: 0, dance: 0, kids: 0 };
 let announcements = loadAnnouncements();
 let seatEvents = loadSeatEventsState();
 let activeSeatEventId = restoreActiveSeatEventId();
 let seatLayoutsByEvent = loadSeatLayoutState();
 let seatLayoutState = {};
+let cellManagementState = loadCellManagementState();
 let homeCarouselTimer = null;
 let homeCarouselResolved = false;
 let carouselScrollPauseTimer = null;
 let profileEditMode = false;
 let lastProfileSearchTerm = "";
-let selectedMinistryPage = "Praise And Worship Team";
+let selectedMinistryPage = restoreSelectedMinistryPage();
 let pendingSeatSelections = [];
 let adminUserSyncInFlight = false;
 let ministryRequestSyncInFlight = false;
@@ -1232,6 +1236,7 @@ function handleLogout() {
   window.localStorage.removeItem(SESSION_KEY);
   window.localStorage.removeItem(ACTIVE_SECTION_KEY);
   window.sessionStorage.removeItem(SESSION_TEMP_KEY);
+  window.sessionStorage.removeItem(ADMIN_MODE_KEY);
   activeSection = "home";
   photoUploadMessage.textContent = "";
   renderApp();
@@ -1322,6 +1327,7 @@ function toggleAdminMode() {
   }
 
   adminMode = !adminMode;
+  window.sessionStorage.setItem(ADMIN_MODE_KEY, adminMode ? "true" : "false");
 
   if (!adminMode && activeSection === "admin") {
     activeSection = "home";
@@ -1468,6 +1474,7 @@ function renderApp() {
 
   if (!canEnterAdminMode()) {
     adminMode = false;
+    window.sessionStorage.removeItem(ADMIN_MODE_KEY);
   }
 
   if (activeSection === "admin" && !(adminMode && hasMinistryApprovalAccess())) {
@@ -1500,6 +1507,9 @@ function renderApp() {
 
 function renderSections() {
   persistActiveSection();
+  if (activeSection === "ministryDetail") {
+    persistSelectedMinistryPage();
+  }
   sectionIds.forEach((sectionId) => {
     const section = document.querySelector(`#section-${sectionId}`);
     section.classList.toggle("app-hidden", sectionId !== activeSection);
@@ -1774,6 +1784,339 @@ function renderSearchProfileMinistries(user) {
   }
 
   return `${rows}${addRow}`;
+}
+
+function buildCellManagementOptionList(records, selectedId = "", emptyLabel = "Select") {
+  return [`<option value="">${escapeHtml(emptyLabel)}</option>`, ...records.map((record) =>
+    `<option value="${escapeHtml(record.id)}" ${record.id === selectedId ? "selected" : ""}>${escapeHtml(record.name)}</option>`
+  )].join("");
+}
+
+function getManagedCellProfiles() {
+  const usedUserIds = new Set((cellManagementState.records ?? []).map((record) => record.userId).filter(Boolean));
+  return getRegisteredChurchProfiles()
+    .filter((user) => !usedUserIds.has(user.id))
+    .sort((left, right) => (left.name || left.username || "").localeCompare(right.name || right.username || ""));
+}
+
+function getCellLeaderAssignedCount(recordId, excludeRecordId = "") {
+  return (cellManagementState.records ?? []).filter((record) =>
+    record.id !== excludeRecordId
+    && record.cellLeaderUserId === recordId
+    && ["member", "visitor"].includes(record.discipleshipLevel)
+  ).length;
+}
+
+function updateCellRecord(recordId, updater) {
+  cellManagementState.records = (cellManagementState.records ?? []).map((record) =>
+    record.id === recordId ? normalizeCellRecord(updater(record)) : normalizeCellRecord(record)
+  );
+  persistCellManagement();
+}
+
+function addCellManagementRecord(payload) {
+  const user = authState.users.find((entry) => entry.id === payload.userId);
+  if (!user) {
+    return false;
+  }
+
+  const nextRecord = normalizeCellRecord({
+    id: `cell-record-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+    userId: user.id,
+    name: user.name || user.username || "",
+    leadershipOffice: payload.leadershipOffice || "",
+    invitedByUserId: payload.invitedByUserId || "",
+    consolidatorUserId: payload.consolidatorUserId || "",
+    cellLeaderUserId: payload.cellLeaderUserId || "",
+    cellGroup: payload.cellGroup || "",
+    consolidationCount: payload.consolidationCount || 0,
+    preEncounterCompleted: Boolean(payload.preEncounterCompleted),
+    encounterCompleted: Boolean(payload.encounterCompleted),
+    postEncounterCompleted: Boolean(payload.postEncounterCompleted),
+    successfullyRetainedVisitorCount: payload.successfullyRetainedVisitorCount || 0,
+    raisedCellLeadersCount: payload.raisedCellLeadersCount || 0,
+    manualLevelOverride: payload.manualLevelOverride || ""
+  });
+
+  cellManagementState.records = sortManagedAccountsByNewest
+    ? [...(cellManagementState.records ?? []), nextRecord].sort(sortManagedAccountsByNewest)
+    : [...(cellManagementState.records ?? []), nextRecord];
+  if (nextRecord.cellGroup && !cellManagementState.groups.includes(nextRecord.cellGroup)) {
+    cellManagementState.groups = sortEntries([...(cellManagementState.groups ?? []), nextRecord.cellGroup]);
+  }
+  persistCellManagement();
+  return true;
+}
+
+function buildCellManagementRoster() {
+  const groups = {};
+
+  (cellManagementState.records ?? []).forEach((record) => {
+    const key = record.cellLeaderName || "Unassigned";
+    if (!groups[key]) {
+      groups[key] = [];
+    }
+    groups[key].push(record);
+  });
+
+  const orderedGroups = Object.entries(groups).sort(([left], [right]) => left.localeCompare(right));
+  if (!orderedGroups.length) {
+    return `<div class="empty-card">No cell management records yet.</div>`;
+  }
+
+  return orderedGroups.map(([leaderName, records]) => `
+    <article class="managed-ministry-row">
+      <strong>${escapeHtml(leaderName === "Unassigned" ? "Unassigned Roster" : leaderName)}</strong>
+      <div class="admin-readonly-meta">
+        ${records
+          .sort((left, right) => (left.name || "").localeCompare(right.name || ""))
+          .map((record) => `${escapeHtml(record.name)} • ${escapeHtml(getCellDiscipleshipLabel(record.discipleshipLevel))}${record.cellGroup ? ` • ${escapeHtml(record.cellGroup)}` : ""}`)
+          .map((line) => `<div>${line}</div>`)
+          .join("")}
+      </div>
+    </article>
+  `).join("");
+}
+
+function renderCellManagementWorkspace() {
+  syncCellManagementRecords();
+  const canManage = canManageCellManagement() && adminMode;
+  const availableProfiles = getManagedCellProfiles();
+  const consolidators = getEligibleConsolidators();
+  const cellLeaders = getEligibleCellLeaders();
+  const groups = sortEntries(cellManagementState.groups ?? []);
+  const sortedCellRecords = sortCellManagementRecords(cellManagementState.records ?? []);
+
+  const wrapper = document.createElement("div");
+  wrapper.className = "cell-management-workspace";
+  wrapper.innerHTML = `
+    <section class="shell-card">
+      <div class="section-heading">
+        <div>
+          <p class="mini-label">Cell Management</p>
+          <h2>Discipleship records</h2>
+        </div>
+      </div>
+      ${canManage ? `
+        <form id="cell-management-add-form" class="inline-form compact-form">
+          <select id="cell-management-user">
+            <option value="">Select registered member</option>
+            ${availableProfiles.map((user) => `<option value="${escapeHtml(user.id)}">${escapeHtml(user.name || user.username)}</option>`).join("")}
+          </select>
+          <select id="cell-management-office">
+            <option value="">Leadership office (optional)</option>
+            ${Object.entries(cellLeadershipOfficeLabels).map(([value, label]) => `<option value="${value}">${escapeHtml(label)}</option>`).join("")}
+          </select>
+          <button class="secondary-btn" type="submit">Add Record</button>
+        </form>
+      ` : `<div class="empty-card">Turn on Admin mode to manage discipleship records.</div>`}
+    </section>
+    ${renderCellManagementTree(cellManagementState.records ?? [], canManage)}
+    <section class="shell-card">
+      <div class="section-heading">
+        <div>
+          <p class="mini-label">Roster</p>
+          <h2>Grouped by cell leader</h2>
+        </div>
+      </div>
+      <div class="admin-list">${buildCellManagementRoster()}</div>
+    </section>
+    <section class="shell-card">
+      <div class="section-heading">
+        <div>
+          <p class="mini-label">Records</p>
+          <h2>People and progress</h2>
+        </div>
+      </div>
+      ${(sortedCellRecords).length ? `
+        <div class="table-wrap">
+          <table class="assignment-table cell-management-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Priority</th>
+                <th>Invited By</th>
+                <th>Consolidator</th>
+                <th>Cell Leader</th>
+                <th>Cell Group</th>
+                <th>Progress</th>
+                <th>Invited Visitors</th>
+                ${canManage ? "<th>Actions</th>" : ""}
+              </tr>
+            </thead>
+            <tbody>
+              ${sortedCellRecords.map((record) => {
+                const leadershipOffice = getCellLeadershipOfficeLabel(record.leadershipOffice);
+                const levelLabel = getCellDiscipleshipLabel(record.discipleshipLevel);
+                const priorityLabel = [leadershipOffice, levelLabel].filter(Boolean).join(" • ") || "-";
+                const hideCellLeader = ["seniorPastor", "adminPastor"].includes(record.leadershipOffice);
+                const progressParts = [
+                  `Consolidations: ${record.consolidationCount || 0}`,
+                  `Retained: ${record.successfullyRetainedVisitorCount || 0}`,
+                  `Raised: ${record.raisedCellLeadersCount || 0}`,
+                  `Pre: ${record.preEncounterCompleted ? "Done" : "No"}`,
+                  `Encounter: ${record.encounterCompleted ? "Done" : "No"}`,
+                  `Post: ${record.postEncounterCompleted ? "Done" : "No"}`
+                ];
+                return `
+                  <tr>
+                    <td><strong>${escapeHtml(record.name)}</strong></td>
+                    <td>${escapeHtml(priorityLabel)}</td>
+                    <td>${escapeHtml(record.invitedByName || "-")}</td>
+                    <td>${escapeHtml(record.consolidatorName || "-")}</td>
+                    <td>${escapeHtml(hideCellLeader ? "-" : (record.cellLeaderName || "-"))}</td>
+                    <td>${escapeHtml(record.cellGroup || "-")}</td>
+                    <td>${escapeHtml(progressParts.join(" | "))}</td>
+                    <td>${escapeHtml(getInvitedVisitorsForRecord(record.id).map((entry) => entry.name).join(", ") || "-")}</td>
+                    ${canManage ? `
+                      <td>
+                        <div class="managed-ministry-actions cell-management-actions">
+                          <select class="cell-management-office-select" data-record-id="${escapeHtml(record.id)}">
+                            <option value="">No leadership office</option>
+                            ${Object.entries(cellLeadershipOfficeLabels).map(([value, label]) => `<option value="${value}" ${record.leadershipOffice === value ? "selected" : ""}>${escapeHtml(label)}</option>`).join("")}
+                          </select>
+                          <select class="cell-management-level-select" data-record-id="${escapeHtml(record.id)}">
+                            <option value="">Automatic discipleship title</option>
+                            ${Object.entries(cellDiscipleshipLabels).map(([value, label]) => `<option value="${value}" ${record.manualLevelOverride === value ? "selected" : ""}>${escapeHtml(label)}</option>`).join("")}
+                          </select>
+                          <select class="cell-management-inviter-select" data-record-id="${escapeHtml(record.id)}">
+                            ${buildCellManagementOptionList(cellManagementState.records.filter((entry) => entry.id !== record.id), record.invitedByUserId, "Invited by")}
+                          </select>
+                          <select class="cell-management-consolidator-select" data-record-id="${escapeHtml(record.id)}">
+                            ${buildCellManagementOptionList(consolidators.filter((entry) => entry.id !== record.id), record.consolidatorUserId, "Consolidator")}
+                          </select>
+                          <select class="cell-management-leader-select" data-record-id="${escapeHtml(record.id)}">
+                            ${buildCellManagementOptionList(cellLeaders.filter((entry) => entry.id !== record.id), record.cellLeaderUserId, "Cell leader")}
+                          </select>
+                          <input class="cell-management-group-input" data-record-id="${escapeHtml(record.id)}" list="cell-management-group-list" type="text" value="${escapeHtml(record.cellGroup || "")}" placeholder="Cell group">
+                          <input class="cell-management-consolidations-input" data-record-id="${escapeHtml(record.id)}" type="number" min="0" max="4" value="${escapeHtml(String(record.consolidationCount || 0))}" placeholder="Consolidations">
+                          <input class="cell-management-retained-input" data-record-id="${escapeHtml(record.id)}" type="number" min="0" value="${escapeHtml(String(record.successfullyRetainedVisitorCount || 0))}" placeholder="Retained visitors">
+                          <input class="cell-management-raised-input" data-record-id="${escapeHtml(record.id)}" type="number" min="0" value="${escapeHtml(String(record.raisedCellLeadersCount || 0))}" placeholder="Raised leaders">
+                          <label class="tag"><input class="cell-management-check" data-key="preEncounterCompleted" data-record-id="${escapeHtml(record.id)}" type="checkbox" ${record.preEncounterCompleted ? "checked" : ""}> Pre</label>
+                          <label class="tag"><input class="cell-management-check" data-key="encounterCompleted" data-record-id="${escapeHtml(record.id)}" type="checkbox" ${record.encounterCompleted ? "checked" : ""}> Encounter</label>
+                          <label class="tag"><input class="cell-management-check" data-key="postEncounterCompleted" data-record-id="${escapeHtml(record.id)}" type="checkbox" ${record.postEncounterCompleted ? "checked" : ""}> Post</label>
+                          <div class="admin-actions">
+                            <button class="secondary-btn cell-management-save" type="button" data-record-id="${escapeHtml(record.id)}">Save</button>
+                            <button class="ghost-btn cell-management-promote" type="button" data-record-id="${escapeHtml(record.id)}">Promote</button>
+                            <button class="ghost-btn cell-management-demote" type="button" data-record-id="${escapeHtml(record.id)}">Demote</button>
+                          </div>
+                        </div>
+                      </td>
+                    ` : ""}
+                  </tr>
+                `;
+              }).join("")}
+            </tbody>
+          </table>
+        </div>
+      ` : `<div class="empty-card">No cell discipleship records yet.</div>`}
+      <datalist id="cell-management-group-list">
+        ${groups.map((group) => `<option value="${escapeHtml(group)}"></option>`).join("")}
+      </datalist>
+    </section>
+  `;
+
+  if (canManage) {
+    const addForm = wrapper.querySelector("#cell-management-add-form");
+    addForm?.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const userId = wrapper.querySelector("#cell-management-user")?.value || "";
+      const leadershipOffice = wrapper.querySelector("#cell-management-office")?.value || "";
+      if (!userId) {
+        return;
+      }
+      addCellManagementRecord({ userId, leadershipOffice });
+      renderApp();
+    });
+
+    wrapper.querySelectorAll(".cell-management-save").forEach((button) => {
+      button.addEventListener("click", () => {
+        const recordId = button.dataset.recordId;
+        const consolidatorUserId = wrapper.querySelector(`.cell-management-consolidator-select[data-record-id="${cssEscape(recordId)}"]`)?.value || "";
+        const cellLeaderUserId = wrapper.querySelector(`.cell-management-leader-select[data-record-id="${cssEscape(recordId)}"]`)?.value || "";
+        if (cellLeaderUserId && getCellLeaderAssignedCount(cellLeaderUserId, recordId) >= 12) {
+          window.alert("That cell leader is already handling 12 members.");
+          return;
+        }
+        updateCellRecord(recordId, (record) => ({
+          ...record,
+          leadershipOffice: wrapper.querySelector(`.cell-management-office-select[data-record-id="${cssEscape(recordId)}"]`)?.value || "",
+          manualLevelOverride: wrapper.querySelector(`.cell-management-level-select[data-record-id="${cssEscape(recordId)}"]`)?.value || "",
+          invitedByUserId: wrapper.querySelector(`.cell-management-inviter-select[data-record-id="${cssEscape(recordId)}"]`)?.value || "",
+          consolidatorUserId,
+          cellLeaderUserId,
+          cellGroup: wrapper.querySelector(`.cell-management-group-input[data-record-id="${cssEscape(recordId)}"]`)?.value || "",
+          consolidationCount: Number(wrapper.querySelector(`.cell-management-consolidations-input[data-record-id="${cssEscape(recordId)}"]`)?.value || 0),
+          successfullyRetainedVisitorCount: Number(wrapper.querySelector(`.cell-management-retained-input[data-record-id="${cssEscape(recordId)}"]`)?.value || 0),
+          raisedCellLeadersCount: Number(wrapper.querySelector(`.cell-management-raised-input[data-record-id="${cssEscape(recordId)}"]`)?.value || 0),
+          preEncounterCompleted: Boolean(wrapper.querySelector(`.cell-management-check[data-key="preEncounterCompleted"][data-record-id="${cssEscape(recordId)}"]`)?.checked),
+          encounterCompleted: Boolean(wrapper.querySelector(`.cell-management-check[data-key="encounterCompleted"][data-record-id="${cssEscape(recordId)}"]`)?.checked),
+          postEncounterCompleted: Boolean(wrapper.querySelector(`.cell-management-check[data-key="postEncounterCompleted"][data-record-id="${cssEscape(recordId)}"]`)?.checked)
+        }));
+
+        const savedRecord = getCellManagementRecord(recordId);
+        if (savedRecord?.cellGroup && !cellManagementState.groups.includes(savedRecord.cellGroup)) {
+          cellManagementState.groups = sortEntries([...(cellManagementState.groups ?? []), savedRecord.cellGroup]);
+          persistCellManagement();
+        }
+        renderApp();
+      });
+    });
+
+    wrapper.querySelectorAll(".cell-management-promote").forEach((button) => {
+      button.addEventListener("click", () => {
+        const record = getCellManagementRecord(button.dataset.recordId);
+        if (!record) {
+          return;
+        }
+        const order = ["visitor", "member", "cellLeader", "networkLeader"];
+        const currentIndex = order.indexOf(record.manualLevelOverride || record.discipleshipLevel);
+        const nextValue = order[Math.min(order.length - 1, Math.max(0, currentIndex + 1))];
+        updateCellRecord(record.id, (entry) => ({ ...entry, manualLevelOverride: nextValue }));
+        renderApp();
+      });
+    });
+
+    wrapper.querySelectorAll(".cell-management-demote").forEach((button) => {
+      button.addEventListener("click", () => {
+        const record = getCellManagementRecord(button.dataset.recordId);
+        if (!record) {
+          return;
+        }
+        const order = ["visitor", "member", "cellLeader", "networkLeader"];
+        const currentIndex = order.indexOf(record.manualLevelOverride || record.discipleshipLevel);
+        const nextValue = order[Math.max(0, currentIndex - 1)];
+        updateCellRecord(record.id, (entry) => ({ ...entry, manualLevelOverride: nextValue }));
+        renderApp();
+      });
+    });
+
+    wrapper.querySelectorAll(".cell-tree-save").forEach((button) => {
+      button.addEventListener("click", () => {
+        const slotId = button.dataset.slotId;
+        const recordId = wrapper.querySelector(`.cell-tree-select[data-slot-id="${cssEscape(slotId)}"]`)?.value || "";
+        cellManagementState.treeAssignments = {
+          ...(cellManagementState.treeAssignments ?? {}),
+          [slotId]: recordId
+        };
+        persistCellManagement();
+        renderApp();
+      });
+    });
+
+    wrapper.querySelectorAll(".cell-tree-clear").forEach((button) => {
+      button.addEventListener("click", () => {
+        const slotId = button.dataset.slotId;
+        const nextAssignments = { ...(cellManagementState.treeAssignments ?? {}) };
+        delete nextAssignments[slotId];
+        cellManagementState.treeAssignments = nextAssignments;
+        persistCellManagement();
+        renderApp();
+      });
+    });
+  }
+
+  return wrapper;
 }
 
 function renderProfileMinistryOptions() {
@@ -3645,6 +3988,130 @@ function buildPdfDocument(title, subtitle, rows) {
   </html>`;
 }
 
+function getSeedCellManagementRecords() {
+  return [
+    {
+      id: "cell-seed-babes",
+      userId: "",
+      name: "Ptra. Babes Dionisio",
+      leadershipOffice: "seniorPastor",
+      manualLevelOverride: "networkLeader"
+    },
+    {
+      id: "cell-seed-ferdie",
+      userId: "ferdie-seed",
+      name: "Ptr. Ferdie Tolentino",
+      leadershipOffice: "adminPastor",
+      manualLevelOverride: "networkLeader"
+    },
+    {
+      id: "cell-seed-reny",
+      userId: "",
+      name: "Reny Borlagdan",
+      leadershipOffice: "cellManager",
+      cellLeaderUserId: "cell-seed-ferdie",
+      cellLeaderName: "Ptr. Ferdie Tolentino",
+      manualLevelOverride: "member"
+    },
+    {
+      id: "cell-seed-edward",
+      userId: "",
+      name: "Edward Manapol",
+      cellLeaderUserId: "cell-seed-ferdie",
+      cellLeaderName: "Ptr. Ferdie Tolentino",
+      manualLevelOverride: "member"
+    },
+    {
+      id: "cell-seed-charles",
+      userId: "",
+      name: "Charles Francis Echano",
+      cellLeaderUserId: "cell-seed-ferdie",
+      cellLeaderName: "Ptr. Ferdie Tolentino",
+      manualLevelOverride: "member"
+    },
+    {
+      id: "cell-seed-louisse",
+      userId: "",
+      name: "Louisse Encela",
+      cellLeaderUserId: "cell-seed-ferdie",
+      cellLeaderName: "Ptr. Ferdie Tolentino",
+      manualLevelOverride: "member"
+    },
+    {
+      id: "cell-seed-edmund",
+      userId: "",
+      name: "Edmund Echano",
+      cellLeaderUserId: "cell-seed-ferdie",
+      cellLeaderName: "Ptr. Ferdie Tolentino",
+      manualLevelOverride: "member"
+    },
+    {
+      id: "cell-seed-roel",
+      userId: "",
+      name: "Roel Bayonon",
+      cellLeaderUserId: "cell-seed-ferdie",
+      cellLeaderName: "Ptr. Ferdie Tolentino",
+      manualLevelOverride: "member"
+    }
+  ];
+}
+
+function getDefaultCellManagementState() {
+  return {
+    records: getSeedCellManagementRecords(),
+    groups: [],
+    treeAssignments: {
+      A1: "cell-seed-babes",
+      B1: "cell-seed-ferdie",
+      C1: "cell-seed-reny",
+      C2: "cell-seed-edward",
+      C3: "cell-seed-charles",
+      C4: "cell-seed-louisse",
+      C5: "cell-seed-edmund",
+      C6: "cell-seed-roel"
+    }
+  };
+}
+
+function loadCellManagementState() {
+  const saved = window.localStorage.getItem(CELL_MANAGEMENT_KEY);
+  if (!saved) {
+    return getDefaultCellManagementState();
+  }
+
+  try {
+    const parsed = JSON.parse(saved);
+    const seedRecords = getSeedCellManagementRecords();
+    const savedRecords = Array.isArray(parsed.records) ? parsed.records : [];
+    const mergedRecords = [...savedRecords];
+    seedRecords.forEach((seedRecord) => {
+      const exists = mergedRecords.some((record) =>
+        String(record?.id || "") === seedRecord.id
+        || samePerson(record?.name || "", seedRecord.name)
+      );
+      if (!exists) {
+        mergedRecords.push(seedRecord);
+      }
+    });
+
+    const defaultTreeAssignments = getDefaultCellManagementState().treeAssignments;
+    return {
+      records: mergedRecords,
+      groups: Array.isArray(parsed.groups) ? sortEntries(parsed.groups.map((value) => String(value || "").trim()).filter(Boolean)) : [],
+      treeAssignments: parsed.treeAssignments && typeof parsed.treeAssignments === "object"
+        ? { ...defaultTreeAssignments, ...parsed.treeAssignments }
+        : defaultTreeAssignments
+    };
+  } catch (error) {
+    console.warn("Could not parse saved cell management state. Using a clean state.", error);
+    return getDefaultCellManagementState();
+  }
+}
+
+function persistCellManagement() {
+  window.localStorage.setItem(CELL_MANAGEMENT_KEY, JSON.stringify(cellManagementState));
+}
+
 function loadState() {
   const saved = window.localStorage.getItem(STORAGE_KEY);
   if (!saved) {
@@ -4064,7 +4531,19 @@ function restoreSession() {
 
 function restoreActiveSection() {
   const saved = window.localStorage.getItem(ACTIVE_SECTION_KEY);
+  if (saved === "organizer") {
+    return "ministryDetail";
+  }
   return sectionIds.includes(saved) ? saved : "home";
+}
+
+function restoreSelectedMinistryPage() {
+  const saved = window.localStorage.getItem(SELECTED_MINISTRY_PAGE_KEY);
+  return saved ? normalizeMinistryName(saved) : "Praise And Worship Team";
+}
+
+function restoreAdminMode() {
+  return window.sessionStorage.getItem(ADMIN_MODE_KEY) === "true";
 }
 
 function normalizeContactNumber(value) {
@@ -4480,6 +4959,14 @@ function persistActiveSeatEvent() {
 function persistActiveSection() {
   if (sectionIds.includes(activeSection)) {
     window.localStorage.setItem(ACTIVE_SECTION_KEY, activeSection);
+  }
+}
+
+function persistSelectedMinistryPage() {
+  if (selectedMinistryPage) {
+    window.localStorage.setItem(SELECTED_MINISTRY_PAGE_KEY, normalizeMinistryName(selectedMinistryPage));
+  } else {
+    window.localStorage.removeItem(SELECTED_MINISTRY_PAGE_KEY);
   }
 }
 
@@ -5137,6 +5624,235 @@ function getVisibleTopRoleSummary(account) {
   );
 
   return ministryLeadershipTitle ? formatTitleLabel(ministryLeadershipTitle) : "";
+}
+
+const cellDiscipleshipLabels = {
+  visitor: "Visitor (Level 1)",
+  member: "Member (Level 2)",
+  cellLeader: "Cell Leader (Level 3)",
+  networkLeader: "Network Leader (Level 4)"
+};
+
+const cellLeadershipOfficeLabels = {
+  seniorPastor: "Senior Pastor",
+  adminPastor: "Admin Pastor",
+  cellManager: "Cell Manager",
+  primaryLeader: "Primary Leader"
+};
+
+const cellManagementTreeLevels = [
+  { label: "Senior Pastor", slots: ["A1"] },
+  { label: "Admin Pastor", slots: ["B1"] },
+  { label: "Cell Management / Members", slots: ["C1", "C2", "C3", "C4", "C5", "C6"] }
+];
+
+function canManageCellManagement() {
+  if (!currentUser) {
+    return false;
+  }
+
+  return isCreator() || ["headAdmin", "admin"].includes(currentUser.role);
+}
+
+function getRegisteredChurchProfiles() {
+  return authState.users
+    .filter((user) => !user.isCreator && !isExcludedLegacyOrTestAccount(user))
+    .map((user) => normalizeUserAccount(user));
+}
+
+function getCellManagementRecord(recordId) {
+  return (cellManagementState.records ?? []).find((record) => record.id === recordId) ?? null;
+}
+
+function getCellDisplayPersonName(userId, fallbackName = "") {
+  const matchedUser = authState.users.find((user) => user.id === userId);
+  return matchedUser?.name || matchedUser?.username || fallbackName || "";
+}
+
+function getCellLeadershipOfficeLabel(value) {
+  return cellLeadershipOfficeLabels[value] || "";
+}
+
+function getCellDiscipleshipLabel(value) {
+  return cellDiscipleshipLabels[value] || "";
+}
+
+function getCellDisplayPrioritySummary(record) {
+  const parts = [
+    getCellLeadershipOfficeLabel(record.leadershipOffice),
+    getCellDiscipleshipLabel(record.discipleshipLevel)
+  ].filter(Boolean);
+
+  return parts.join(" • ");
+}
+
+function getEffectiveDiscipleshipLevel(record) {
+  if (!record) {
+    return "visitor";
+  }
+
+  if (record.manualLevelOverride && cellDiscipleshipLabels[record.manualLevelOverride]) {
+    return record.manualLevelOverride;
+  }
+
+  if (record.raisedCellLeadersCount >= 2) {
+    return "networkLeader";
+  }
+
+  if (
+    record.preEncounterCompleted
+    && record.encounterCompleted
+    && record.postEncounterCompleted
+    && (Number(record.successfullyRetainedVisitorCount) || 0) >= 1
+  ) {
+    return "cellLeader";
+  }
+
+  if ((Number(record.consolidationCount) || 0) >= 4) {
+    return "member";
+  }
+
+  return "visitor";
+}
+
+function normalizeCellRecord(record) {
+  const normalized = {
+    id: record.id || `cell-record-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+    userId: record.userId || "",
+    name: record.name || getCellDisplayPersonName(record.userId, ""),
+    leadershipOffice: record.leadershipOffice || "",
+    invitedByUserId: record.invitedByUserId || "",
+    invitedByName: record.invitedByName || "",
+    consolidatorUserId: record.consolidatorUserId || "",
+    consolidatorName: record.consolidatorName || "",
+    cellLeaderUserId: record.cellLeaderUserId || "",
+    cellLeaderName: record.cellLeaderName || "",
+    cellGroup: String(record.cellGroup || "").trim(),
+    consolidationCount: Number(record.consolidationCount) || 0,
+    preEncounterCompleted: Boolean(record.preEncounterCompleted),
+    encounterCompleted: Boolean(record.encounterCompleted),
+    postEncounterCompleted: Boolean(record.postEncounterCompleted),
+    successfullyRetainedVisitorCount: Number(record.successfullyRetainedVisitorCount) || 0,
+    raisedCellLeadersCount: Number(record.raisedCellLeadersCount) || 0,
+    manualLevelOverride: record.manualLevelOverride || "",
+    createdAt: record.createdAt || new Date().toISOString()
+  };
+
+  normalized.name = getCellDisplayPersonName(normalized.userId, normalized.name);
+  normalized.invitedByName = getCellDisplayPersonName(normalized.invitedByUserId, normalized.invitedByName);
+  normalized.consolidatorName = getCellDisplayPersonName(normalized.consolidatorUserId, normalized.consolidatorName);
+  normalized.cellLeaderName = getCellDisplayPersonName(normalized.cellLeaderUserId, normalized.cellLeaderName);
+  normalized.discipleshipLevel = getEffectiveDiscipleshipLevel(normalized);
+
+  return normalized;
+}
+
+function syncCellManagementRecords() {
+  cellManagementState.records = (cellManagementState.records ?? [])
+    .map((record) => normalizeCellRecord(record))
+    .filter((record) => record.name);
+}
+
+function getEligibleConsolidators() {
+  return (cellManagementState.records ?? []).filter((record) => ["cellLeader", "networkLeader"].includes(record.discipleshipLevel));
+}
+
+function getEligibleCellLeaders() {
+  return (cellManagementState.records ?? []).filter((record) => ["cellLeader", "networkLeader"].includes(record.discipleshipLevel));
+}
+
+function getInvitedVisitorsForRecord(recordId) {
+  return (cellManagementState.records ?? []).filter((record) => record.invitedByUserId === recordId);
+}
+
+function getCellDiscipleshipOrder(level) {
+  return {
+    visitor: 0,
+    member: 1,
+    cellLeader: 2,
+    networkLeader: 3
+  }[level] ?? 99;
+}
+
+function sortCellManagementRecords(records) {
+  return [...records].sort((left, right) => {
+    const levelCompare = getCellDiscipleshipOrder(left.discipleshipLevel) - getCellDiscipleshipOrder(right.discipleshipLevel);
+    if (levelCompare !== 0) {
+      return levelCompare;
+    }
+
+    const officeLeft = getCellLeadershipOfficeLabel(left.leadershipOffice);
+    const officeRight = getCellLeadershipOfficeLabel(right.leadershipOffice);
+    if (officeLeft || officeRight) {
+      const officeCompare = officeLeft.localeCompare(officeRight);
+      if (officeCompare !== 0) {
+        return officeCompare;
+      }
+    }
+
+    return (left.name || "").localeCompare(right.name || "");
+  });
+}
+
+function getCellTreeAssignedRecord(slotId) {
+  const recordId = cellManagementState.treeAssignments?.[slotId] || "";
+  return getCellManagementRecord(recordId);
+}
+
+function renderCellManagementTree(records, canManage) {
+  return `
+    <section class="shell-card">
+      <div class="section-heading">
+        <div>
+          <p class="mini-label">Tree</p>
+          <h2>Cell Management structure</h2>
+        </div>
+      </div>
+      <div class="cell-tree">
+        ${cellManagementTreeLevels.map((level) => `
+          <div class="cell-tree-level">
+            <div class="cell-tree-level-label">${escapeHtml(level.label)}</div>
+            <div class="cell-tree-row">
+              ${level.slots.map((slotId) => {
+                const assigned = getCellTreeAssignedRecord(slotId);
+                const summary = assigned ? (getCellDisplayPrioritySummary(assigned) || getCellDiscipleshipLabel(assigned.discipleshipLevel)) : "Unassigned";
+                const hoverStats = assigned
+                  ? [
+                    assigned.name || "",
+                    getCellDisplayPrioritySummary(assigned) || getCellDiscipleshipLabel(assigned.discipleshipLevel),
+                    `Invited By: ${assigned.invitedByName || "-"}`,
+                    `Consolidator: ${assigned.consolidatorName || "-"}`,
+                    `Cell Leader: ${assigned.cellLeaderName || "-"}`,
+                    `Cell Group: ${assigned.cellGroup || "-"}`,
+                    `Consolidations: ${assigned.consolidationCount || 0}`,
+                    `Retained Visitors: ${assigned.successfullyRetainedVisitorCount || 0}`,
+                    `Raised Leaders: ${assigned.raisedCellLeadersCount || 0}`
+                  ].join(" | ")
+                  : `${slotId} is currently unassigned.`;
+                return `
+                  <article class="cell-tree-node" title="${escapeHtml(hoverStats)}">
+                    <strong>${escapeHtml(slotId)}</strong>
+                    <div class="cell-tree-name">${escapeHtml(assigned?.name || "Empty slot")}</div>
+                    <div class="person-schedule-meta">${escapeHtml(summary)}</div>
+                    ${canManage ? `
+                      <select class="cell-tree-select" data-slot-id="${escapeHtml(slotId)}">
+                        <option value="">Assign record</option>
+                        ${records.map((record) => `<option value="${escapeHtml(record.id)}" ${assigned?.id === record.id ? "selected" : ""}>${escapeHtml(record.name)}</option>`).join("")}
+                      </select>
+                      <div class="admin-actions">
+                        <button class="secondary-btn cell-tree-save" type="button" data-slot-id="${escapeHtml(slotId)}">Save</button>
+                        <button class="ghost-btn cell-tree-clear" type="button" data-slot-id="${escapeHtml(slotId)}">Clear</button>
+                      </div>
+                    ` : ""}
+                  </article>
+                `;
+              }).join("")}
+            </div>
+          </div>
+        `).join("")}
+      </div>
+    </section>
+  `;
 }
 
 function sortManagedAccountsByNewest(left, right) {

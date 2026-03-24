@@ -1,0 +1,246 @@
+CELL MANAGEMENT SYSTEM
+
+1. Main Purpose
+Ang Cell Management system ay para matrack ang:
+- discipleship growth
+- sino ang lead sa kanino
+- consolidations
+- encounter progress
+- promotions and demotions
+- cell roster
+
+2. Automatic Discipleship Titles
+Ito ang automatic discipleship titles:
+- Visitor (Level 1)
+- Member (Level 2)
+- Cell Leader (Level 3)
+- Network Leader (Level 4)
+
+Pwede rin silang i-bestow manually ng:
+- Cell Manager
+- Admin Pastor
+- Senior Pastor
+
+Pwede rin silang mag-promote at mag-demote manually.
+
+3. Leadership Offices
+Ito ay hiwalay sa discipleship levels:
+- Senior Pastor
+- Admin Pastor
+- Cell Manager
+- Primary Leader
+
+Ang mga office na ito ay manual assignment, hindi automatic.
+
+4. Visitor (Level 1)
+Ang Visitor ay may temporary leader na tinatawag na Consolidator.
+
+Rule:
+- Ang Consolidator dapat Level 3 pataas
+- Ibig sabihin puwedeng:
+  - Cell Leader (Level 3)
+  - Network Leader (Level 4)
+  - o mas mataas na office kapag allowed
+
+Exception:
+- Lower levels hindi puwede maging consolidator
+- Maliban na lang kung Creator ang mag-assign
+
+Para maging Member (Level 2), kailangan:
+- 4 approved consolidations
+
+5. Member (Level 2)
+Kapag naka-4 approved consolidations na ang Visitor, automatic o manually approved na puwede siyang maging:
+- Member (Level 2)
+
+Kapag Member na, dapat makita:
+- Cell Leader
+- Cell Group
+
+6. Cell Leader (Level 3)
+Para maging Cell Leader, kailangan:
+- completed ang Pre-Encounter
+- completed ang Encounter
+- completed ang Post-Encounter
+- successfully consolidated at retained at least 1 visitor under them
+
+Kapag nameet ito, puwedeng:
+- automatic title bestow
+- o manually i-promote ng Cell Manager pataas
+
+7. Network Leader (Level 4)
+Para maging Network Leader, kailangan:
+- Cell Leader na siya
+- may na-raise siyang at least 2 Cell Leaders
+- at ang mga Cell Leaders na iyon ay may hawak nang sarili nilang members
+
+Kapag nameet ito, puwedeng:
+- automatic title bestow
+- o manually i-promote ng Cell Manager pataas
+
+8. Primary Leader and Network Leader
+Magkaiba ang Primary Leader at Network Leader.
+
+Rules:
+- Ang Primary Leader ay office/position
+- Ang Network Leader ay discipleship title
+- Puwede ang isang tao na:
+  - Primary Leader lang
+  - Network Leader lang
+  - parehong Primary Leader at Network Leader
+
+Hindi automatic na pag Primary Leader ay Network Leader na agad.
+Hindi rin automatic na pag Network Leader ay Primary Leader na agad.
+
+9. Cell Capacity Rule
+Bawat leader/handler can only oversee up to 12 members at a time.
+
+Kasama dito ang mga taong may actual leadership/handling responsibility.
+
+10. Display Priority
+Sa Search Profile, priority dapat ang discipleship title.
+
+Suggested order:
+1. Leadership office
+2. Discipleship title
+3. Ministry titles
+4. Contact and other profile details
+
+Search should support:
+- full name
+- username
+- discipleship title
+
+11. Roster
+Sa fast version, simple roster muna.
+
+Suggested roster:
+- grouped by Cell Leader
+- puwedeng may Cell Group
+- bawat tao may:
+  - name
+  - discipleship title
+  - consolidator or cell leader
+  - cell group
+  - consolidation count
+  - encounter progress
+
+12. Promotion and Demotion
+Cell Manager and higher-ups can:
+- bestow automatic titles manually
+- promote manually
+- demote manually
+
+So may balance ang system:
+- automatic for normal flow
+- manual for exceptions and corrections
+
+13. Transfer Authority
+Authorized higher leadership can also:
+- transfer visitors to a different consolidator
+- transfer members to a different cell leader
+- transfer members to a different cell group
+
+So aside from promote and demote, may transfer authority din.
+
+14. Cell Group Dissolvement
+Ang Cell Group puwedeng ma-dissolve, pero hindi basta-basta.
+
+Rules:
+- Cell Dissolvement requires approval of:
+  - Cell Manager
+  - and Admin Pastor or Senior Pastor
+
+So hindi puwede isang tao lang ang mag-dissolve.
+
+Bago ma-complete ang dissolvement:
+- lahat ng members sa cell group na iyon must be resolved
+
+Options per member:
+- ilipat sa another cell group
+- or remove as church member
+
+Hindi matatapos ang dissolvement hangga't may unresolved members pa.
+
+15. Fast Build Scope
+Unang build muna ng Cell Management should include:
+- discipleship titles
+- consolidator assignment
+- invited by tracking
+- invited visitors tracking
+- cell leader assignment
+- cell group assignment
+- consolidation count
+- pre-encounter / encounter / post-encounter tracking
+- automatic eligibility checks
+- manual promote / demote / bestow
+- transfer tools
+- simple roster
+
+16. Later Upgrade
+Future enhancement:
+- visual network tree
+- highlighted person position in the network
+- more advanced reporting
+
+
+TEXT-BASED DRAWING / SAMPLE FLOW
+
+Senior Pastor
+|
++-- Admin Pastor
+    |
+    +-- Cell Manager
+        |
+        +-- Primary Leader
+            |
+            +-- Network Leader (Level 4)
+                |
+                +-- Cell Leader (Level 3)
+                    |
+                    +-- Cell Group: up to 12 members
+                        |
+                        +-- Member (Level 2)
+                        |   |
+                        |   +-- completed:
+                        |       - Pre-Encounter
+                        |       - Encounter
+                        |       - Post-Encounter
+                        |   |
+                        |   +-- if naka successfully consolidate and retain
+                        |       at least 1 visitor under them
+                        |       => puwede maging Cell Leader (Level 3)
+                        |
+                        +-- Visitor (Level 1)
+                            |
+                            +-- Invited By: [name]
+                            +-- Consolidator: [name]
+                            +-- needs 4 approved consolidations
+                            +-- after 4 approved consolidations
+                                => Member (Level 2)
+
+
+INVITER / CONSOLIDATOR SAMPLE
+
+Member or Leader invites Visitor
+|
++-- Visitor record shows:
+    - Invited By: Juan
+    - Consolidator: Mark
+|
++-- Juan record shows:
+    - Invited Visitors:
+      - Visitor A
+      - Visitor B
+
+
+LEVEL FLOW
+
+Visitor (Level 1)
+  -> 4 approved consolidations
+  -> Member (Level 2)
+  -> finish Pre-Encounter + Encounter + Post-Encounter
+  -> successfully consolidate and retain at least 1 visitor
+  -> Cell Leader (Level 3)
+  -> raise at least 2 Cell Leaders with their own members
+  -> Network Leader (Level 4)
