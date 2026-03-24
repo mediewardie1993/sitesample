@@ -1088,6 +1088,8 @@ code {
 
 .cell-standalone-shell .shell-card {
   width: 100%;
+  border: 0;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.14);
 }
 
 .cell-management-actions {
@@ -1132,20 +1134,24 @@ code {
 }
 
 .cell-tree-drawer-toggle {
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--muted);
+  padding: 10px 14px;
+  border: 1px solid rgba(136, 225, 176, 0.22);
+  border-radius: 999px;
+  background: rgba(88, 173, 125, 0.14);
+  color: var(--text);
   font: inherit;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   text-align: left;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.16);
 }
 
 .cell-tree-drawer-toggle:hover,
 .cell-tree-drawer-toggle:focus-visible {
   color: var(--accent-strong);
+  border-color: rgba(136, 225, 176, 0.42);
+  background: rgba(88, 173, 125, 0.22);
 }
 
 .cell-tree-row {
@@ -1160,7 +1166,7 @@ code {
   top: 0;
   left: calc(100% + 18px);
   z-index: 60;
-  width: min(360px, 78vw);
+  width: min(620px, 86vw);
   max-height: min(72vh, 760px);
   overflow-y: auto;
   overflow-x: hidden;
