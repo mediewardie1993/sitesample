@@ -237,6 +237,8 @@ const profileDisplayContactNumber = document.querySelector("#profile-display-con
 const profileDisplayGender = document.querySelector("#profile-display-gender");
 const profileDisplayOccupation = document.querySelector("#profile-display-occupation");
 const profileDisplayCivilStatus = document.querySelector("#profile-display-civil-status");
+const profileNetworkDisplayRow = document.querySelector("#profile-network-display-row");
+const profileDisplayNetworkName = document.querySelector("#profile-display-network-name");
 const profileForm = document.querySelector("#profile-form");
 const profileName = document.querySelector("#profile-name");
 const profileBirthday = document.querySelector("#profile-birthday");
@@ -244,6 +246,8 @@ const profileContactNumber = document.querySelector("#profile-contact-number");
 const profileGender = document.querySelector("#profile-gender");
 const profileOccupation = document.querySelector("#profile-occupation");
 const profileCivilStatus = document.querySelector("#profile-civil-status");
+const profileNetworkField = document.querySelector("#profile-network-field");
+const profileNetworkName = document.querySelector("#profile-network-name");
 const profileMessage = document.querySelector("#profile-message");
 const profileMinistryForm = document.querySelector("#profile-ministry-form");
 const profileMinistrySelect = document.querySelector("#profile-ministry-select");
@@ -1527,8 +1531,10 @@ function renderProfile() {
 
   syncMinistryRequestsFromSupabase();
   syncCurrentUserFromSupabase();
+  syncCellManagementRecords();
 
   const profile = currentUser.profile ?? {};
+  const canEditNetworkName = currentUserIsNetworkLeader();
   const displayName = currentUser.name || currentUser.username || "Friend";
   profileWelcome.textContent = `Welcome ${displayName}!`;
   profileEditToggle.textContent = profileEditMode ? "Done Editing" : "Edit Profile";
@@ -1541,12 +1547,16 @@ function renderProfile() {
   profileGender.value = profile.gender || "";
   profileOccupation.value = profile.occupation || "";
   profileCivilStatus.value = profile.civilStatus || "";
+  profileNetworkName.value = profile.networkName || "";
   profileDisplayName.textContent = currentUser.name || "-";
   profileDisplayBirthday.textContent = profile.birthday ? formatValue("date", profile.birthday) : "-";
   profileDisplayContactNumber.textContent = profile.contactNumber || "-";
   profileDisplayGender.textContent = profile.gender || "-";
   profileDisplayOccupation.textContent = profile.occupation || "-";
   profileDisplayCivilStatus.textContent = profile.civilStatus || "-";
+  profileDisplayNetworkName.textContent = profile.networkName || "-";
+  profileNetworkDisplayRow.classList.toggle("app-hidden", !canEditNetworkName);
+  profileNetworkField.classList.toggle("app-hidden", !canEditNetworkName);
 
   const photoSource = profile.photoData || "";
   profilePhotoPreview.classList.toggle("app-hidden", !photoSource);
@@ -2179,6 +2189,7 @@ function handleProfileSave(event) {
   const gender = profileGender.value;
   const occupation = profileOccupation.value.trim();
   const civilStatus = profileCivilStatus.value;
+  const networkName = profileNetworkName.value.trim();
 
   if (!name || !birthday || !contactNumber || !gender) {
     profileMessage.textContent = "Full name, birthday, contact number, and gender are required.";
@@ -2211,7 +2222,8 @@ function handleProfileSave(event) {
       contactNumber,
       gender,
       occupation,
-      civilStatus
+      civilStatus,
+      networkName: currentUserIsNetworkLeader() ? networkName : (user.profile?.networkName || "")
     }
   }));
   profileMessage.textContent = "Profile saved.";
@@ -5662,6 +5674,22 @@ function getRegisteredChurchProfiles() {
 
 function getCellManagementRecord(recordId) {
   return (cellManagementState.records ?? []).find((record) => record.id === recordId) ?? null;
+}
+
+function getCurrentUserCellManagementRecord() {
+  if (!currentUser) {
+    return null;
+  }
+
+  return (cellManagementState.records ?? []).find((record) =>
+    record.userId === currentUser.id
+    || samePerson(record.name || "", currentUser.name || "")
+  ) ?? null;
+}
+
+function currentUserIsNetworkLeader() {
+  const record = getCurrentUserCellManagementRecord();
+  return record?.discipleshipLevel === "networkLeader";
 }
 
 function getCellDisplayPersonName(userId, fallbackName = "") {

@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Cormorant+Garamond:wght@600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260324a">
+  <link rel="stylesheet" href="styles.css?v=20260324c">
 </head>
 <body>
   <div id="login-gate" class="auth-shell">
@@ -249,6 +249,10 @@
                   <span>Civil Status</span>
                   <strong id="profile-display-civil-status">-</strong>
                 </div>
+                <div id="profile-network-display-row" class="profile-info-row app-hidden">
+                  <span>Network Name</span>
+                  <strong id="profile-display-network-name">-</strong>
+                </div>
               </div>
               <form id="profile-form" class="auth-form app-hidden">
                 <label class="auth-field">
@@ -284,6 +288,10 @@
                     <option value="Widowed">Widowed</option>
                     <option value="Separated">Separated</option>
                   </select>
+                </label>
+                <label id="profile-network-field" class="auth-field app-hidden">
+                  <span>Network Name</span>
+                  <input id="profile-network-name" type="text" placeholder="Name your network">
                 </label>
                 <button class="primary-btn" type="submit">Save Profile</button>
               </form>
@@ -951,7 +959,7 @@
     </section>
   </template>
 
-  <script src="ministry-pages.js?v=20260324a"></script>
-  <script src="script.js?v=20260324a"></script>
+  <script src="ministry-pages.js?v=20260324c"></script>
+  <script src="script.js?v=20260324c"></script>
 </body>
 </html>

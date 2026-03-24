@@ -881,6 +881,27 @@ code {
   gap: 16px;
 }
 
+.cell-editor-grid,
+.cell-editor-form {
+  display: grid;
+  gap: 12px;
+}
+
+.cell-editor-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.cell-editor-row-tight {
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.cell-editor-checks {
+  grid-template-columns: repeat(auto-fit, minmax(110px, max-content));
+  align-items: center;
+}
+
 .announcement-grant-panel {
   margin-top: 22px;
   padding-top: 18px;

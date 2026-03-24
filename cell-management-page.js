@@ -69,7 +69,7 @@ const cellLeadershipOfficeLabels = {
 const cellManagementTreeLevels = [
   { label: "Senior Pastor", slots: ["A1"] },
   { label: "Admin Pastor", slots: ["B1"] },
-  { label: "Cell Management / Members", slots: ["C1", "C2", "C3", "C4", "C5", "C6"] }
+  { label: "Cell Management / Members", slots: ["C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10", "C11", "C12"] }
 ];
 
 const loginRequiredCard = document.querySelector("#cell-login-required");
@@ -189,12 +189,12 @@ function isCreator() {
 function getSeedCellManagementRecords() {
   return [
     { id: "cell-seed-babes", userId: "", name: "Ptra. Babes Dionisio", leadershipOffice: "seniorPastor", manualLevelOverride: "networkLeader" },
-    { id: "cell-seed-ferdie", userId: "ferdie-seed", name: "Ptr. Ferdie Tolentino", leadershipOffice: "adminPastor", manualLevelOverride: "networkLeader" },
-    { id: "cell-seed-reny", userId: "", name: "Reny Borlagdan", leadershipOffice: "cellManager", cellLeaderUserId: "cell-seed-ferdie", cellLeaderName: "Ptr. Ferdie Tolentino", manualLevelOverride: "member" },
+    { id: "cell-seed-ferdie", userId: "ferdie-seed", name: "Ptr. Ferdie Tolentino", leadershipOffice: "adminPastor", cellGroup: "Ferds Flock", manualLevelOverride: "networkLeader" },
+    { id: "cell-seed-reny", userId: "", name: "Reny Borlagdan", leadershipOffice: "cellManager", cellGroup: "Renygades Network", cellLeaderUserId: "cell-seed-ferdie", cellLeaderName: "Ptr. Ferdie Tolentino", manualLevelOverride: "member" },
     { id: "cell-seed-edward", userId: "", name: "Edward Manapol", cellLeaderUserId: "cell-seed-ferdie", cellLeaderName: "Ptr. Ferdie Tolentino", manualLevelOverride: "member" },
     { id: "cell-seed-charles", userId: "", name: "Charles Francis Echano", cellLeaderUserId: "cell-seed-ferdie", cellLeaderName: "Ptr. Ferdie Tolentino", manualLevelOverride: "member" },
     { id: "cell-seed-louisse", userId: "", name: "Louisse Encela", cellLeaderUserId: "cell-seed-ferdie", cellLeaderName: "Ptr. Ferdie Tolentino", manualLevelOverride: "member" },
-    { id: "cell-seed-edmund", userId: "", name: "Edmund Echano", cellLeaderUserId: "cell-seed-ferdie", cellLeaderName: "Ptr. Ferdie Tolentino", manualLevelOverride: "member" },
+    { id: "cell-seed-edmund", userId: "", name: "Edmund Echano", cellGroup: "Floodgates Network", cellLeaderUserId: "cell-seed-ferdie", cellLeaderName: "Ptr. Ferdie Tolentino", manualLevelOverride: "member" },
     { id: "cell-seed-roel", userId: "", name: "Roel Bayonon", cellLeaderUserId: "cell-seed-ferdie", cellLeaderName: "Ptr. Ferdie Tolentino", manualLevelOverride: "member" }
   ];
 }
@@ -211,7 +211,13 @@ function getDefaultCellManagementState() {
       C3: "cell-seed-charles",
       C4: "cell-seed-louisse",
       C5: "cell-seed-edmund",
-      C6: "cell-seed-roel"
+      C6: "cell-seed-roel",
+      C7: "",
+      C8: "",
+      C9: "",
+      C10: "",
+      C11: "",
+      C12: ""
     }
   };
 }
@@ -268,8 +274,56 @@ function getCellDiscipleshipLabel(value) {
   return cellDiscipleshipLabels[value] || "";
 }
 
+function getEffectiveLeadershipOfficeValue(record) {
+  if (!record) {
+    return "";
+  }
+
+  if (record.leadershipOffice) {
+    return record.leadershipOffice;
+  }
+
+  const leader = getCellManagementRecord(record.cellLeaderUserId);
+  if (leader?.leadershipOffice === "adminPastor") {
+    return "primaryLeader";
+  }
+
+  return "";
+}
+
+function getEffectiveCellGroup(record) {
+  if (!record) {
+    return "";
+  }
+
+  if (record.cellGroup) {
+    return record.cellGroup;
+  }
+
+  const leader = getCellManagementRecord(record.cellLeaderUserId);
+  if (!leader) {
+    return "";
+  }
+
+  const linkedLeader = authState.users.find((user) => user.id === leader.userId);
+  const profileNetworkName = String(linkedLeader?.profile?.networkName || "").trim();
+  if (profileNetworkName) {
+    return profileNetworkName;
+  }
+
+  if (leader.cellGroup) {
+    return leader.cellGroup;
+  }
+
+  if (["networkLeader"].includes(leader.discipleshipLevel) || leader.leadershipOffice === "adminPastor") {
+    return `${leader.name} Flock`;
+  }
+
+  return "";
+}
+
 function getCellDisplayPrioritySummary(record) {
-  return [getCellLeadershipOfficeLabel(record.leadershipOffice), getCellDiscipleshipLabel(record.discipleshipLevel)]
+  return [getCellLeadershipOfficeLabel(getEffectiveLeadershipOfficeValue(record)), getCellDiscipleshipLabel(record.discipleshipLevel)]
     .filter(Boolean)
     .join(" | ");
 }
@@ -321,6 +375,8 @@ function normalizeCellRecord(record) {
   normalized.consolidatorName = getCellDisplayPersonName(normalized.consolidatorUserId, normalized.consolidatorName);
   normalized.cellLeaderName = getCellDisplayPersonName(normalized.cellLeaderUserId, normalized.cellLeaderName);
   normalized.discipleshipLevel = getEffectiveDiscipleshipLevel(normalized);
+  normalized.effectiveLeadershipOffice = getEffectiveLeadershipOfficeValue(normalized);
+  normalized.effectiveCellGroup = getEffectiveCellGroup(normalized);
   return normalized;
 }
 
@@ -421,6 +477,23 @@ function buildRecordPickerOptions(records) {
   return records.map((record) => `<option value="${escapeHtml(getRecordPickerLabel(record))}"></option>`).join("");
 }
 
+function getAdminPastorRecord() {
+  return (cellManagementState.records ?? []).find((record) => getEffectiveLeadershipOfficeValue(record) === "adminPastor")
+    || getCellManagementRecord("cell-seed-ferdie");
+}
+
+function shouldAllowNoLeader(record) {
+  return ["seniorPastor", "adminPastor"].includes(getEffectiveLeadershipOfficeValue(record));
+}
+
+function getRosterOwnerName(record) {
+  if (shouldAllowNoLeader(record)) {
+    return record.name || "";
+  }
+
+  return record.cellLeaderName || record.consolidatorName || getAdminPastorRecord()?.name || "";
+}
+
 function updateCellRecord(recordId, updater) {
   cellManagementState.records = (cellManagementState.records ?? []).map((record) =>
     record.id === recordId ? normalizeCellRecord(updater(record)) : normalizeCellRecord(record)
@@ -433,6 +506,7 @@ function addCellManagementRecord(payload) {
   if (!user) {
     return false;
   }
+  const defaultLeader = getAdminPastorRecord();
   const nextRecord = normalizeCellRecord({
     id: `cell-record-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
     userId: user.id,
@@ -440,8 +514,7 @@ function addCellManagementRecord(payload) {
     leadershipOffice: payload.leadershipOffice || "",
     invitedByUserId: payload.invitedByUserId || "",
     consolidatorUserId: payload.consolidatorUserId || "",
-    cellLeaderUserId: payload.cellLeaderUserId || "",
-    cellGroup: payload.cellGroup || "",
+    cellLeaderUserId: payload.leadershipOffice ? "" : (payload.cellLeaderUserId || defaultLeader?.id || ""),
     consolidationCount: payload.consolidationCount || 0,
     preEncounterCompleted: Boolean(payload.preEncounterCompleted),
     encounterCompleted: Boolean(payload.encounterCompleted),
@@ -495,14 +568,14 @@ function renderCellManagementTree(records, canManage) {
               ${level.slots.map((slotId) => {
                 const assigned = getCellTreeAssignedRecord(slotId);
                 const summary = assigned ? (getCellDisplayPrioritySummary(assigned) || getCellDiscipleshipLabel(assigned.discipleshipLevel)) : "Unassigned";
-                const hoverStats = assigned
+                  const hoverStats = assigned
                   ? [
                     assigned.name || "",
                     getCellDisplayPrioritySummary(assigned) || getCellDiscipleshipLabel(assigned.discipleshipLevel),
                     `Invited By: ${assigned.invitedByName || "-"}`,
                     `Consolidator: ${assigned.consolidatorName || "-"}`,
-                    `Cell Leader: ${["seniorPastor", "adminPastor"].includes(assigned.leadershipOffice) ? "-" : (assigned.cellLeaderName || "-")}`,
-                    `Cell Group: ${assigned.cellGroup || "-"}`,
+                    `Cell Leader: ${["seniorPastor", "adminPastor"].includes(assigned.effectiveLeadershipOffice) ? "-" : (assigned.cellLeaderName || "-")}`,
+                    `Cell Group: ${assigned.effectiveCellGroup || "-"}`,
                     `Consolidations: ${assigned.consolidationCount || 0}`,
                     `Retained Visitors: ${assigned.successfullyRetainedVisitorCount || 0}`,
                     `Raised Leaders: ${assigned.raisedCellLeadersCount || 0}`
@@ -537,7 +610,10 @@ function renderCellManagementTree(records, canManage) {
 function buildCellManagementRoster() {
   const groups = {};
   sortCellManagementRecords(cellManagementState.records ?? []).forEach((record) => {
-    const key = record.cellLeaderName || record.consolidatorName || "Unassigned";
+    const key = getRosterOwnerName(record);
+    if (!key) {
+      return;
+    }
     groups[key] = groups[key] || [];
     groups[key].push(record);
   });
@@ -547,15 +623,15 @@ function buildCellManagementRoster() {
   }
   return orderedGroups.map(([leaderName, records]) => `
     <article class="managed-ministry-row">
-      <strong>${escapeHtml(leaderName === "Unassigned" ? "Unassigned Roster" : leaderName)}</strong>
+      <strong>${escapeHtml(leaderName)}</strong>
       <div class="admin-readonly-meta">
-        ${records.sort((left, right) => (left.name || "").localeCompare(right.name || "")).map((record) => `${escapeHtml(record.name)} | ${escapeHtml(getCellDiscipleshipLabel(record.discipleshipLevel))}${record.cellGroup ? ` | ${escapeHtml(record.cellGroup)}` : ""}`).map((line) => `<div>${line}</div>`).join("")}
+        ${records.sort((left, right) => (left.name || "").localeCompare(right.name || "")).map((record) => `${escapeHtml(record.name)} | ${escapeHtml(getCellDiscipleshipLabel(record.discipleshipLevel))}${record.effectiveCellGroup ? ` | ${escapeHtml(record.effectiveCellGroup)}` : ""}`).map((line) => `<div>${line}</div>`).join("")}
       </div>
     </article>
   `).join("");
 }
 
-function buildCellManagementEditor(canManage, availableProfiles, consolidators, cellLeaders, groups) {
+function buildCellManagementEditor(canManage, availableProfiles, consolidators, cellLeaders) {
   if (!canManage) {
     return `
       <section class="shell-card">
@@ -592,7 +668,7 @@ function buildCellManagementEditor(canManage, availableProfiles, consolidators, 
             ${availableProfiles.map((user) => `<option value="${escapeHtml(user.id)}">${escapeHtml(user.name || user.username)}</option>`).join("")}
           </select>
           <select id="cell-management-office">
-            <option value="">Leadership office (optional)</option>
+            <option value="">Leadership office (auto if blank)</option>
             ${Object.entries(cellLeadershipOfficeLabels).map(([value, label]) => `<option value="${value}">${escapeHtml(label)}</option>`).join("")}
           </select>
           <button class="secondary-btn" type="submit">Add Record</button>
@@ -604,7 +680,7 @@ function buildCellManagementEditor(canManage, availableProfiles, consolidators, 
               ${allRecords.map((record) => `<option value="${escapeHtml(record.id)}" ${editingRecord?.id === record.id ? "selected" : ""}>${escapeHtml(getRecordPickerLabel(record))}</option>`).join("")}
             </select>
             <select id="cell-editor-office">
-              <option value="">No leadership office</option>
+              <option value="">Auto leadership office</option>
               ${Object.entries(cellLeadershipOfficeLabels).map(([value, label]) => `<option value="${value}" ${editingRecord?.leadershipOffice === value ? "selected" : ""}>${escapeHtml(label)}</option>`).join("")}
             </select>
             <select id="cell-editor-level">
@@ -618,7 +694,6 @@ function buildCellManagementEditor(canManage, availableProfiles, consolidators, 
             <input id="cell-editor-leader" list="cell-record-picker-list" type="text" value="${escapeHtml(editingRecord ? getRecordPickerLabel(getCellManagementRecord(editingRecord.cellLeaderUserId) || { name: editingRecord.cellLeaderName || "" }) : "")}" placeholder="Cell leader">
           </div>
           <div class="cell-editor-row cell-editor-row-tight">
-            <input id="cell-editor-group" list="cell-management-group-list" type="text" value="${escapeHtml(editingRecord?.cellGroup || "")}" placeholder="Cell group">
             <input id="cell-editor-consolidations" type="number" min="0" max="4" value="${escapeHtml(String(editingRecord?.consolidationCount || 0))}" placeholder="Consolidations">
             <input id="cell-editor-retained" type="number" min="0" value="${escapeHtml(String(editingRecord?.successfullyRetainedVisitorCount || 0))}" placeholder="Retained visitors">
             <input id="cell-editor-raised" type="number" min="0" value="${escapeHtml(String(editingRecord?.raisedCellLeadersCount || 0))}" placeholder="Raised leaders">
@@ -639,9 +714,6 @@ function buildCellManagementEditor(canManage, availableProfiles, consolidators, 
       <datalist id="cell-record-picker-list">
         ${buildRecordPickerOptions([...inviterPool, ...consolidatorPool, ...leaderPool].filter((record, index, list) => list.findIndex((entry) => entry.id === record.id) === index))}
       </datalist>
-      <datalist id="cell-management-group-list">
-        ${groups.map((group) => `<option value="${escapeHtml(group)}"></option>`).join("")}
-      </datalist>
     </section>
   `;
 }
@@ -659,63 +731,88 @@ function bindEditableControls() {
     renderWorkspace();
   });
 
-  cellManagementRoot.querySelectorAll(".cell-management-save").forEach((button) => {
+  cellManagementRoot.querySelectorAll(".cell-management-edit").forEach((button) => {
     button.addEventListener("click", () => {
-      const recordId = button.dataset.recordId;
-      const consolidatorUserId = cellManagementRoot.querySelector(`.cell-management-consolidator-select[data-record-id="${cssEscape(recordId)}"]`)?.value || "";
-      const cellLeaderUserId = cellManagementRoot.querySelector(`.cell-management-leader-select[data-record-id="${cssEscape(recordId)}"]`)?.value || "";
-      if (cellLeaderUserId && getCellLeaderAssignedCount(cellLeaderUserId, recordId) >= 12) {
-        window.alert("That cell leader is already handling 12 members.");
-        return;
-      }
-      updateCellRecord(recordId, (record) => ({
-        ...record,
-        leadershipOffice: cellManagementRoot.querySelector(`.cell-management-office-select[data-record-id="${cssEscape(recordId)}"]`)?.value || "",
-        manualLevelOverride: cellManagementRoot.querySelector(`.cell-management-level-select[data-record-id="${cssEscape(recordId)}"]`)?.value || "",
-        invitedByUserId: cellManagementRoot.querySelector(`.cell-management-inviter-select[data-record-id="${cssEscape(recordId)}"]`)?.value || "",
-        consolidatorUserId,
-        cellLeaderUserId,
-        cellGroup: cellManagementRoot.querySelector(`.cell-management-group-input[data-record-id="${cssEscape(recordId)}"]`)?.value || "",
-        consolidationCount: Number(cellManagementRoot.querySelector(`.cell-management-consolidations-input[data-record-id="${cssEscape(recordId)}"]`)?.value || 0),
-        successfullyRetainedVisitorCount: Number(cellManagementRoot.querySelector(`.cell-management-retained-input[data-record-id="${cssEscape(recordId)}"]`)?.value || 0),
-        raisedCellLeadersCount: Number(cellManagementRoot.querySelector(`.cell-management-raised-input[data-record-id="${cssEscape(recordId)}"]`)?.value || 0),
-        preEncounterCompleted: Boolean(cellManagementRoot.querySelector(`.cell-management-check[data-key="preEncounterCompleted"][data-record-id="${cssEscape(recordId)}"]`)?.checked),
-        encounterCompleted: Boolean(cellManagementRoot.querySelector(`.cell-management-check[data-key="encounterCompleted"][data-record-id="${cssEscape(recordId)}"]`)?.checked),
-        postEncounterCompleted: Boolean(cellManagementRoot.querySelector(`.cell-management-check[data-key="postEncounterCompleted"][data-record-id="${cssEscape(recordId)}"]`)?.checked)
-      }));
-      const savedRecord = getCellManagementRecord(recordId);
-      if (savedRecord?.cellGroup && !(cellManagementState.groups ?? []).includes(savedRecord.cellGroup)) {
-        cellManagementState.groups = sortEntries([...(cellManagementState.groups ?? []), savedRecord.cellGroup]);
-        persistCellManagement();
-      }
+      selectedRecordId = button.dataset.recordId || "";
       renderWorkspace();
     });
   });
 
-  cellManagementRoot.querySelectorAll(".cell-management-promote").forEach((button) => {
-    button.addEventListener("click", () => {
-      const record = getCellManagementRecord(button.dataset.recordId);
-      if (!record) {
-        return;
-      }
-      const order = ["visitor", "member", "cellLeader", "networkLeader"];
-      const currentIndex = order.indexOf(record.manualLevelOverride || record.discipleshipLevel);
-      updateCellRecord(record.id, (entry) => ({ ...entry, manualLevelOverride: order[Math.min(order.length - 1, Math.max(0, currentIndex + 1))] }));
-      renderWorkspace();
-    });
+  const editForm = cellManagementRoot.querySelector("#cell-management-edit-form");
+  editForm?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const recordId = cellManagementRoot.querySelector("#cell-editor-record")?.value || selectedRecordId;
+    if (!recordId) {
+      return;
+    }
+
+    const allRecords = sortCellManagementRecords(cellManagementState.records ?? []);
+    const inviterUserId = resolveRecordIdFromPicker(cellManagementRoot.querySelector("#cell-editor-inviter")?.value || "", allRecords.filter((entry) => entry.id !== recordId));
+    const consolidatorUserId = resolveRecordIdFromPicker(cellManagementRoot.querySelector("#cell-editor-consolidator")?.value || "", getEligibleConsolidators().filter((entry) => entry.id !== recordId));
+    const selectedOffice = cellManagementRoot.querySelector("#cell-editor-office")?.value || "";
+    const resolvedLeaderUserId = resolveRecordIdFromPicker(cellManagementRoot.querySelector("#cell-editor-leader")?.value || "", getEligibleCellLeaders().filter((entry) => entry.id !== recordId));
+    const defaultLeader = getAdminPastorRecord();
+    const cellLeaderUserId = ["seniorPastor", "adminPastor"].includes(selectedOffice) ? "" : (resolvedLeaderUserId || defaultLeader?.id || "");
+
+    if (cellLeaderUserId && getCellLeaderAssignedCount(cellLeaderUserId, recordId) >= 12) {
+      window.alert("That cell leader is already handling 12 members.");
+      return;
+    }
+
+    updateCellRecord(recordId, (record) => ({
+      ...record,
+      leadershipOffice: selectedOffice,
+      manualLevelOverride: cellManagementRoot.querySelector("#cell-editor-level")?.value || "",
+      invitedByUserId,
+      consolidatorUserId,
+      cellLeaderUserId,
+      consolidationCount: Number(cellManagementRoot.querySelector("#cell-editor-consolidations")?.value || 0),
+      successfullyRetainedVisitorCount: Number(cellManagementRoot.querySelector("#cell-editor-retained")?.value || 0),
+      raisedCellLeadersCount: Number(cellManagementRoot.querySelector("#cell-editor-raised")?.value || 0),
+      preEncounterCompleted: Boolean(cellManagementRoot.querySelector("#cell-editor-pre")?.checked),
+      encounterCompleted: Boolean(cellManagementRoot.querySelector("#cell-editor-encounter")?.checked),
+      postEncounterCompleted: Boolean(cellManagementRoot.querySelector("#cell-editor-post")?.checked)
+    }));
+
+    const savedRecord = getCellManagementRecord(recordId);
+    if (savedRecord?.cellGroup && !(cellManagementState.groups ?? []).includes(savedRecord.cellGroup)) {
+      cellManagementState.groups = sortEntries([...(cellManagementState.groups ?? []), savedRecord.cellGroup]);
+      persistCellManagement();
+    }
+    selectedRecordId = recordId;
+    renderWorkspace();
   });
 
-  cellManagementRoot.querySelectorAll(".cell-management-demote").forEach((button) => {
-    button.addEventListener("click", () => {
-      const record = getCellManagementRecord(button.dataset.recordId);
-      if (!record) {
-        return;
-      }
-      const order = ["visitor", "member", "cellLeader", "networkLeader"];
-      const currentIndex = order.indexOf(record.manualLevelOverride || record.discipleshipLevel);
-      updateCellRecord(record.id, (entry) => ({ ...entry, manualLevelOverride: order[Math.max(0, currentIndex - 1)] }));
-      renderWorkspace();
-    });
+  cellManagementRoot.querySelector("#cell-editor-record")?.addEventListener("change", (event) => {
+    selectedRecordId = event.target.value || "";
+    renderWorkspace();
+  });
+
+  cellManagementRoot.querySelector("#cell-editor-promote")?.addEventListener("click", () => {
+    const record = getCellManagementRecord(selectedRecordId);
+    if (!record) {
+      return;
+    }
+    const order = ["visitor", "member", "cellLeader", "networkLeader"];
+    const currentIndex = order.indexOf(record.manualLevelOverride || record.discipleshipLevel);
+    updateCellRecord(record.id, (entry) => ({ ...entry, manualLevelOverride: order[Math.min(order.length - 1, Math.max(0, currentIndex + 1))] }));
+    renderWorkspace();
+  });
+
+  cellManagementRoot.querySelector("#cell-editor-demote")?.addEventListener("click", () => {
+    const record = getCellManagementRecord(selectedRecordId);
+    if (!record) {
+      return;
+    }
+    const order = ["visitor", "member", "cellLeader", "networkLeader"];
+    const currentIndex = order.indexOf(record.manualLevelOverride || record.discipleshipLevel);
+    updateCellRecord(record.id, (entry) => ({ ...entry, manualLevelOverride: order[Math.max(0, currentIndex - 1)] }));
+    renderWorkspace();
+  });
+
+  cellManagementRoot.querySelector("#cell-editor-clear")?.addEventListener("click", () => {
+    selectedRecordId = "";
+    renderWorkspace();
   });
 
   cellManagementRoot.querySelectorAll(".cell-tree-save").forEach((button) => {
@@ -770,32 +867,11 @@ function renderWorkspace() {
   const availableProfiles = getManagedCellProfiles();
   const consolidators = getEligibleConsolidators();
   const cellLeaders = getEligibleCellLeaders();
-  const groups = sortEntries(cellManagementState.groups ?? []);
   const sortedCellRecords = sortCellManagementRecords(cellManagementState.records ?? []);
 
   cellManagementRoot.innerHTML = `
     <div class="cell-page-grid">
-      <section class="shell-card">
-        <div class="section-heading">
-          <div>
-            <p class="mini-label">Cell Management</p>
-            <h2>Discipleship records</h2>
-          </div>
-        </div>
-        ${canManage ? `
-          <form id="cell-management-add-form" class="inline-form compact-form">
-            <select id="cell-management-user">
-              <option value="">Select registered member</option>
-              ${availableProfiles.map((user) => `<option value="${escapeHtml(user.id)}">${escapeHtml(user.name || user.username)}</option>`).join("")}
-            </select>
-            <select id="cell-management-office">
-              <option value="">Leadership office (optional)</option>
-              ${Object.entries(cellLeadershipOfficeLabels).map(([value, label]) => `<option value="${value}">${escapeHtml(label)}</option>`).join("")}
-            </select>
-            <button class="secondary-btn" type="submit">Add Record</button>
-          </form>
-        ` : `<div class="empty-card">Viewer mode is active. Turn on Admin mode to edit records.</div>`}
-      </section>
+      ${buildCellManagementEditor(canManage, availableProfiles, consolidators, cellLeaders)}
       ${renderCellManagementTree(cellManagementState.records ?? [], canManage)}
       <section class="shell-card">
         <div class="section-heading">
@@ -831,10 +907,10 @@ function renderWorkspace() {
               </thead>
               <tbody>
                 ${sortedCellRecords.map((record) => {
-                  const leadershipOffice = getCellLeadershipOfficeLabel(record.leadershipOffice);
+                  const leadershipOffice = getCellLeadershipOfficeLabel(record.effectiveLeadershipOffice);
                   const levelLabel = getCellDiscipleshipLabel(record.discipleshipLevel);
                   const priorityLabel = [leadershipOffice, levelLabel].filter(Boolean).join(" | ") || "-";
-                  const hideCellLeader = ["seniorPastor", "adminPastor"].includes(record.leadershipOffice);
+                  const hideCellLeader = ["seniorPastor", "adminPastor"].includes(record.effectiveLeadershipOffice);
                   const progressParts = [
                     `Consolidations: ${record.consolidationCount || 0}`,
                     `Retained: ${record.successfullyRetainedVisitorCount || 0}`,
@@ -850,42 +926,12 @@ function renderWorkspace() {
                       <td>${escapeHtml(record.invitedByName || "-")}</td>
                       <td>${escapeHtml(record.consolidatorName || "-")}</td>
                       <td>${escapeHtml(hideCellLeader ? "-" : (record.cellLeaderName || "-"))}</td>
-                      <td>${escapeHtml(record.cellGroup || "-")}</td>
+                      <td>${escapeHtml(record.effectiveCellGroup || "-")}</td>
                       <td>${escapeHtml(progressParts.join(" | "))}</td>
                       <td>${escapeHtml(getInvitedVisitorsForRecord(record.id).map((entry) => entry.name).join(", ") || "-")}</td>
                       ${canManage ? `
                         <td>
-                          <div class="managed-ministry-actions cell-management-actions">
-                            <select class="cell-management-office-select" data-record-id="${escapeHtml(record.id)}">
-                              <option value="">No leadership office</option>
-                              ${Object.entries(cellLeadershipOfficeLabels).map(([value, label]) => `<option value="${value}" ${record.leadershipOffice === value ? "selected" : ""}>${escapeHtml(label)}</option>`).join("")}
-                            </select>
-                            <select class="cell-management-level-select" data-record-id="${escapeHtml(record.id)}">
-                              <option value="">Automatic discipleship title</option>
-                              ${Object.entries(cellDiscipleshipLabels).map(([value, label]) => `<option value="${value}" ${record.manualLevelOverride === value ? "selected" : ""}>${escapeHtml(label)}</option>`).join("")}
-                            </select>
-                            <select class="cell-management-inviter-select" data-record-id="${escapeHtml(record.id)}">
-                              ${buildCellManagementOptionList(cellManagementState.records.filter((entry) => entry.id !== record.id), record.invitedByUserId, "Invited by")}
-                            </select>
-                            <select class="cell-management-consolidator-select" data-record-id="${escapeHtml(record.id)}">
-                              ${buildCellManagementOptionList(consolidators.filter((entry) => entry.id !== record.id), record.consolidatorUserId, "Consolidator")}
-                            </select>
-                            <select class="cell-management-leader-select" data-record-id="${escapeHtml(record.id)}">
-                              ${buildCellManagementOptionList(cellLeaders.filter((entry) => entry.id !== record.id), record.cellLeaderUserId, "Cell leader")}
-                            </select>
-                            <input class="cell-management-group-input" data-record-id="${escapeHtml(record.id)}" list="cell-management-group-list" type="text" value="${escapeHtml(record.cellGroup || "")}" placeholder="Cell group">
-                            <input class="cell-management-consolidations-input" data-record-id="${escapeHtml(record.id)}" type="number" min="0" max="4" value="${escapeHtml(String(record.consolidationCount || 0))}" placeholder="Consolidations">
-                            <input class="cell-management-retained-input" data-record-id="${escapeHtml(record.id)}" type="number" min="0" value="${escapeHtml(String(record.successfullyRetainedVisitorCount || 0))}" placeholder="Retained visitors">
-                            <input class="cell-management-raised-input" data-record-id="${escapeHtml(record.id)}" type="number" min="0" value="${escapeHtml(String(record.raisedCellLeadersCount || 0))}" placeholder="Raised leaders">
-                            <label class="tag"><input class="cell-management-check" data-key="preEncounterCompleted" data-record-id="${escapeHtml(record.id)}" type="checkbox" ${record.preEncounterCompleted ? "checked" : ""}> Pre</label>
-                            <label class="tag"><input class="cell-management-check" data-key="encounterCompleted" data-record-id="${escapeHtml(record.id)}" type="checkbox" ${record.encounterCompleted ? "checked" : ""}> Encounter</label>
-                            <label class="tag"><input class="cell-management-check" data-key="postEncounterCompleted" data-record-id="${escapeHtml(record.id)}" type="checkbox" ${record.postEncounterCompleted ? "checked" : ""}> Post</label>
-                            <div class="admin-actions">
-                              <button class="secondary-btn cell-management-save" type="button" data-record-id="${escapeHtml(record.id)}">Save</button>
-                              <button class="ghost-btn cell-management-promote" type="button" data-record-id="${escapeHtml(record.id)}">Promote</button>
-                              <button class="ghost-btn cell-management-demote" type="button" data-record-id="${escapeHtml(record.id)}">Demote</button>
-                            </div>
-                          </div>
+                          <button class="secondary-btn cell-management-edit" type="button" data-record-id="${escapeHtml(record.id)}">Edit</button>
                         </td>
                       ` : ""}
                     </tr>
@@ -895,9 +941,6 @@ function renderWorkspace() {
             </table>
           </div>
         ` : `<div class="empty-card">No cell discipleship records yet.</div>`}
-        <datalist id="cell-management-group-list">
-          ${groups.map((group) => `<option value="${escapeHtml(group)}"></option>`).join("")}
-        </datalist>
       </section>
     </div>
   `;
