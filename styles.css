@@ -879,6 +879,8 @@ code {
 .cell-page-grid {
   display: grid;
   gap: 16px;
+  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+  align-items: start;
 }
 
 .cell-editor-grid,
@@ -1098,6 +1100,11 @@ code {
   gap: 22px;
 }
 
+.cell-structure-panel,
+.cell-leader-panel {
+  align-self: start;
+}
+
 .cell-tree-level {
   display: grid;
   gap: 12px;
@@ -1112,10 +1119,27 @@ code {
   color: var(--muted);
 }
 
+.cell-tree-drawer-toggle {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: left;
+}
+
+.cell-tree-drawer-toggle:hover,
+.cell-tree-drawer-toggle:focus-visible {
+  color: var(--accent-strong);
+}
+
 .cell-tree-row {
   display: grid;
   gap: 10px;
-  justify-items: center;
+  justify-items: stretch;
   width: 100%;
 }
 
@@ -1131,6 +1155,38 @@ code {
   justify-items: start;
   align-content: start;
   text-align: left;
+}
+
+.leader-network-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.leader-network-list {
+  display: grid;
+  gap: 12px;
+  min-height: 360px;
+  padding: 10px;
+  border: 2px solid var(--line);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.leader-network-entry {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+}
+
+.leader-network-entry-head {
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+}
+
+.leader-network-entry-controls {
+  display: grid;
+  gap: 8px;
 }
 
 .cell-tree-node strong {
@@ -1176,6 +1232,10 @@ code {
 }
 
 @media (max-width: 760px) {
+  .cell-page-grid {
+    grid-template-columns: 1fr;
+  }
+
   .standalone-topbar,
   .standalone-session-row {
     flex-direction: column;
