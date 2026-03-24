@@ -864,6 +864,19 @@ code {
   max-width: 760px;
 }
 
+.paw-embed-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.standalone-embed-frame {
+  display: block;
+  width: 100%;
+  min-height: 88vh;
+  border: 0;
+  background: transparent;
+}
+
 .standalone-session-row {
   display: flex;
   justify-content: space-between;
@@ -1092,6 +1105,25 @@ code {
   box-shadow: none;
   background: transparent;
   backdrop-filter: none;
+}
+
+body.organizer-embed-mode {
+  background: transparent;
+}
+
+.organizer-embed-mode #app-shell {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.organizer-embed-mode .site-header,
+.organizer-embed-mode .site-nav {
+  display: none !important;
+}
+
+.organizer-embed-mode #section-organizer {
+  gap: 16px;
 }
 
 .cell-management-actions {
@@ -1681,8 +1713,31 @@ select:focus,
   align-items: center;
 }
 
+.musician-role-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .musician-none-row {
   font-size: 0.82rem;
+}
+
+.musician-clear-btn {
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 127, 127, 0.24);
+  background: rgba(191, 63, 63, 0.12);
+  color: #ffd6d6;
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.musician-role-done {
+  justify-self: start;
+  margin-top: 4px;
 }
 
 .tag-label {

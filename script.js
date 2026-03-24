@@ -17,6 +17,8 @@ const SEAT_RESET_KEY = "jccm-seat-layout-last-reset-v1";
 const CELL_MANAGEMENT_KEY = "jccm-cell-management-v1";
 const SUPABASE_URL = "https://gxgdetvlehwlxsenpijn.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_IAmOapMof9S8qv-rX8WoLg_fBXDqBTs";
+const PAGE_PARAMS = new URLSearchParams(window.location.search);
+const ORGANIZER_EMBED_MODE = PAGE_PARAMS.get("embed") === "organizer";
 
 const registryMeta = {
   worshipLeaders: "Worship Leaders",
@@ -1505,6 +1507,7 @@ async function handleFixedPhotoUpload(event) {
 
 function renderApp() {
   const loggedIn = Boolean(currentUser);
+  document.body.classList.toggle("organizer-embed-mode", ORGANIZER_EMBED_MODE);
   loginGate.classList.toggle("app-hidden", loggedIn);
   appShell.classList.toggle("app-hidden", !loggedIn);
 
@@ -1534,6 +1537,9 @@ function renderApp() {
   adminModeButton.classList.toggle("app-hidden", !canEnterAdminMode());
   adminModeButton.textContent = adminMode ? "Exit Admin" : "Admin";
   adminNavButton.classList.toggle("app-hidden", !(adminMode && hasMinistryApprovalAccess()));
+  if (ORGANIZER_EMBED_MODE) {
+    activeSection = "organizer";
+  }
   renderSections();
   safeRenderSection("seat layout", renderSeatLayout);
   safeRenderSection("profile", renderProfile);
@@ -1562,7 +1568,7 @@ function renderSections() {
   sectionIds.forEach((sectionId) => {
     const section = document.querySelector(`#section-${sectionId}`);
     if (section) {
-      section.classList.toggle("app-hidden", sectionId !== activeSection);
+      section.classList.toggle("app-hidden", ORGANIZER_EMBED_MODE ? sectionId !== "organizer" : sectionId !== activeSection);
     }
   });
 
@@ -3619,22 +3625,38 @@ function bindMusicianRolePanel(section, service, syncedRegistry = getPawProfileR
   const roleList = section.querySelector(".musician-role-list");
   const summary = section.querySelector(".musicians-summary");
   const selectedWrap = section.querySelector(".musicians-selected");
-  if (!roleList || !summary || !selectedWrap) {
+  const detail = section.querySelector(".musician-role-select");
+  if (!roleList || !summary || !selectedWrap || !detail) {
     return;
   }
 
   const options = getAssignableNames(getEffectiveRegistryEntries("musicians", syncedRegistry));
-  const assignments = normalizeMusicianAssignments(service.musicianAssignments, service.musicians);
+  let assignments = normalizeMusicianAssignments(service.musicianAssignments, service.musicians);
   roleList.innerHTML = "";
+
+  const syncMusicianUi = () => {
+    state.services[service.id].musicianAssignments = normalizeMusicianAssignments(assignments);
+    state.services[service.id].musicians = getMusicianAssignmentNames(state.services[service.id].musicianAssignments);
+    assignments = normalizeMusicianAssignments(state.services[service.id].musicianAssignments, state.services[service.id].musicians);
+    upsertHistoryForService(service.id);
+    persistOrganizer();
+    updateMusicianSummary(summary, selectedWrap, assignments);
+    renderUpcomingOrganizerSchedule();
+    renderPersonScheduleResults();
+  };
 
   musicianRoleDefinitions.forEach((role) => {
     const row = document.createElement("div");
     row.className = "musician-role-row";
     const selectedName = assignments[role.key]?.name || "";
     const noOneAssigned = Boolean(assignments[role.key]?.none);
+    const canClear = Boolean(selectedName);
     row.innerHTML = `
       <div class="musician-role-head">
-        <strong>${escapeHtml(role.label)}</strong>
+        <div class="musician-role-title">
+          <strong>${escapeHtml(role.label)}</strong>
+          ${canClear ? `<button type="button" class="musician-clear-btn" data-role-key="${escapeHtml(role.key)}" aria-label="Unassign ${escapeHtml(role.label)}">&times;</button>` : ""}
+        </div>
         <label class="option-row musician-none-row">
           <input type="checkbox" class="musician-none-toggle" data-role-key="${escapeHtml(role.key)}" ${noOneAssigned ? "checked" : ""}>
           <span>No one assigned</span>
@@ -3648,30 +3670,24 @@ function bindMusicianRolePanel(section, service, syncedRegistry = getPawProfileR
 
     const select = row.querySelector(".musician-role-select-input");
     const toggle = row.querySelector(".musician-none-toggle");
-
-    const applyAssignments = (nextAssignments) => {
-      state.services[service.id].musicianAssignments = normalizeMusicianAssignments(nextAssignments);
-      state.services[service.id].musicians = getMusicianAssignmentNames(state.services[service.id].musicianAssignments);
-      upsertHistoryForService(service.id);
-      persistOrganizer();
-      renderServices();
-    };
+    const clearButton = row.querySelector(".musician-clear-btn");
 
     select?.addEventListener("change", (event) => {
+      const currentSelectedName = assignments[role.key]?.name || "";
       const nextAssignments = normalizeMusicianAssignments(assignments);
       nextAssignments[role.key] = { name: event.target.value, none: false };
       const nextValues = getMusicianAssignmentNames(nextAssignments);
 
       const duplicateMessage = getSameServiceDuplicateMessage(service.id, "musicians", event.target.value);
       if (event.target.value && duplicateMessage) {
-        event.target.value = selectedName;
+        event.target.value = currentSelectedName;
         window.alert(duplicateMessage);
         return;
       }
 
       const duplicateRole = nextValues.find((name, index) => name && nextValues.findIndex((other) => samePerson(other, name)) !== index);
       if (duplicateRole) {
-        event.target.value = selectedName;
+        event.target.value = currentSelectedName;
         window.alert(`${getDisplayName(duplicateRole)} is already assigned to another musician position in this service.`);
         return;
       }
@@ -3680,12 +3696,13 @@ function bindMusicianRolePanel(section, service, syncedRegistry = getPawProfileR
       if (conflictMessages.length > 0) {
         const proceed = window.confirm(`${conflictMessages.join("\n\n")}\n\nAre you sure you want to continue with this assignment?`);
         if (!proceed) {
-          event.target.value = selectedName;
+          event.target.value = currentSelectedName;
           return;
         }
       }
 
-      applyAssignments(nextAssignments);
+      assignments = nextAssignments;
+      syncMusicianUi();
     });
 
     toggle?.addEventListener("change", (event) => {
@@ -3694,11 +3711,39 @@ function bindMusicianRolePanel(section, service, syncedRegistry = getPawProfileR
         name: "",
         none: event.target.checked
       };
-      applyAssignments(nextAssignments);
+      if (select) {
+        select.disabled = event.target.checked;
+        select.value = "";
+      }
+      assignments = nextAssignments;
+      syncMusicianUi();
+    });
+
+    clearButton?.addEventListener("click", () => {
+      const nextAssignments = normalizeMusicianAssignments(assignments);
+      nextAssignments[role.key] = { name: "", none: false };
+      if (select) {
+        select.disabled = false;
+        select.value = "";
+      }
+      if (toggle) {
+        toggle.checked = false;
+      }
+      assignments = nextAssignments;
+      syncMusicianUi();
     });
 
     roleList.appendChild(row);
   });
+
+  const doneButton = document.createElement("button");
+  doneButton.type = "button";
+  doneButton.className = "secondary-btn musician-role-done";
+  doneButton.textContent = "Done";
+  doneButton.addEventListener("click", () => {
+    detail.open = false;
+  });
+  roleList.appendChild(doneButton);
 
   updateMusicianSummary(summary, selectedWrap, assignments);
 }

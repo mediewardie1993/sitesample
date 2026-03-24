@@ -40,6 +40,21 @@ function buildCellManagementPanel() {
   return panel;
 }
 
+function buildPawSchedulePanel() {
+  const panel = document.createElement("section");
+  panel.className = "managed-ministry-row ministry-card ministry-launch-card";
+  panel.innerHTML = `
+    <div class="ministry-card-head">
+      <strong>Praise And Worship Team Schedule</strong>
+    </div>
+    <p class="ministry-card-copy">Open the dedicated PAW schedule workspace for upcoming assignments, registries, and service planning.</p>
+    <div class="admin-actions">
+      <a class="secondary-btn" href="./paw-schedule.html">Open PAW Schedule</a>
+    </div>
+  `;
+  return panel;
+}
+
 function getAnnouncementBoardConfig(sectionKey) {
   if (sectionKey === "ministryDetail") {
     const ministry = selectedMinistryPage || "Ministry";
@@ -78,14 +93,18 @@ function renderMinistriesPage() {
       <p class="ministry-card-copy">${isCellManagement ? "Open the dedicated Cell Management workspace." : (isWorshipTeam ? "Open this ministry page to view updates and the schedule link." : "Open this ministry page to view announcements.")}</p>
     `;
 
-    const openButton = card.querySelector(".ministry-open-link");
-    if (openButton) {
-      openButton.addEventListener("click", () => {
-        if (isCellManagement) {
-          window.location.href = "./cell-management.html";
-          return;
-        }
-        selectedMinistryPage = ministry;
+      const openButton = card.querySelector(".ministry-open-link");
+      if (openButton) {
+        openButton.addEventListener("click", () => {
+          if (isCellManagement) {
+            window.location.href = "./cell-management.html";
+            return;
+          }
+          if (isWorshipTeam) {
+            window.location.href = "./paw-schedule.html";
+            return;
+          }
+          selectedMinistryPage = ministry;
         if (typeof persistSelectedMinistryPage === "function") {
           persistSelectedMinistryPage();
         }
@@ -119,8 +138,7 @@ function renderMinistryDetailPage() {
   detachOrganizerSection();
 
   if (ministry === "Praise And Worship Team") {
-    attachOrganizerSectionToMinistryDetail();
-    renderOrganizer();
+    ministryDetailExtra.appendChild(buildPawSchedulePanel());
     return;
   }
 
