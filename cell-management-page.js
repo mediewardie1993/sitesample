@@ -88,7 +88,7 @@ let selectedRecordId = "";
 let selectedLeaderId = "";
 let selectedLeaderHistory = [];
 let transferPromptRecordId = "";
-let showFerdzMembers = true;
+let showFerdzMembers = false;
 let cellSearchQuery = "";
 let remoteUserSyncInFlight = false;
 
@@ -137,11 +137,14 @@ function normalizeUserAccount(user) {
   const usernames = Array.isArray(user?.usernames) && user.usernames.length > 0
     ? user.usernames
     : [user?.username].filter(Boolean);
+  const isFerdzSeed = String(user?.id || "") === "ferdie-seed";
 
   return {
     ...user,
-    username: user?.username || usernames[0] || "",
-    usernames,
+    name: isFerdzSeed ? "Ptr. Ferdz Tolentino" : (user?.name || ""),
+    username: isFerdzSeed ? "Ferdz" : (user?.username || usernames[0] || ""),
+    usernames: isFerdzSeed ? ["Ferdz"] : usernames,
+    password: isFerdzSeed ? "Ferdz" : user?.password,
     role: user?.id === "admin-seed" && user?.role !== "member" ? "headAdmin" : (user?.role || "member"),
     isCreator: Boolean(user?.isCreator || user?.id === "admin-seed"),
     ministries: Array.isArray(user?.ministries) ? user.ministries : [],
@@ -459,10 +462,11 @@ function getEffectiveDiscipleshipLevel(record) {
 }
 
 function normalizeCellRecord(record) {
+  const isFerdzSeed = String(record?.id || "") === "cell-seed-ferdie";
   const normalized = {
     id: record.id || `cell-record-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
     userId: record.userId || "",
-    name: record.name || getCellDisplayPersonName(record.userId, ""),
+    name: isFerdzSeed ? "Ptr. Ferdz Tolentino" : (record.name || getCellDisplayPersonName(record.userId, "")),
     leadershipOffice: record.leadershipOffice || "",
     invitedByUserId: record.invitedByUserId || "",
     invitedByName: record.invitedByName || "",
@@ -470,7 +474,7 @@ function normalizeCellRecord(record) {
     consolidatorName: record.consolidatorName || "",
     cellLeaderUserId: record.cellLeaderUserId || "",
     cellLeaderName: record.cellLeaderName || "",
-    cellGroup: String(record.cellGroup || "").trim(),
+    cellGroup: isFerdzSeed ? "Ferdz' Flock" : String(record.cellGroup || "").trim(),
     consolidationCount: Number(record.consolidationCount) || 0,
     preEncounterCompleted: Boolean(record.preEncounterCompleted),
     encounterCompleted: Boolean(record.encounterCompleted),
@@ -481,7 +485,7 @@ function normalizeCellRecord(record) {
     createdAt: record.createdAt || new Date().toISOString()
   };
 
-  normalized.name = getCellDisplayPersonName(normalized.userId, normalized.name);
+  normalized.name = isFerdzSeed ? "Ptr. Ferdz Tolentino" : getCellDisplayPersonName(normalized.userId, normalized.name);
   normalized.invitedByName = getCellDisplayPersonName(normalized.invitedByUserId, normalized.invitedByName);
   normalized.consolidatorName = getCellDisplayPersonName(normalized.consolidatorUserId, normalized.consolidatorName);
   normalized.cellLeaderName = getCellDisplayPersonName(normalized.cellLeaderUserId, normalized.cellLeaderName);

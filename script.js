@@ -450,6 +450,7 @@ const personScheduleStart = document.querySelector("#person-schedule-start");
 const personScheduleMonths = document.querySelector("#person-schedule-months");
 const personScheduleResults = document.querySelector("#person-schedule-results");
 const organizerUpcomingSchedule = document.querySelector("#organizer-upcoming-schedule");
+let selectedUpcomingScheduleKey = "";
 
 let state = loadState();
 let history = loadHistory();
@@ -3310,13 +3311,50 @@ function renderUpcomingOrganizerSchedule() {
   organizerUpcomingSchedule.innerHTML = "";
 
   if (!upcomingEntries.length) {
+    selectedUpcomingScheduleKey = "";
     organizerUpcomingSchedule.innerHTML = `<div class="empty-card">No assigned Praise and Worship Team schedules were found in the next 3 months.</div>`;
     return;
   }
 
+  const currentKeys = new Set(upcomingEntries.map((entry) => `${entry.serviceId}::${normalizeDate(entry.date)}`));
+  if (selectedUpcomingScheduleKey && !currentKeys.has(selectedUpcomingScheduleKey)) {
+    selectedUpcomingScheduleKey = "";
+  }
+
+  if (canEditOrganizer()) {
+    const controls = document.createElement("div");
+    controls.className = "upcoming-schedule-controls";
+    controls.innerHTML = `
+      <button class="secondary-btn" id="remove-selected-upcoming-schedule" type="button" ${selectedUpcomingScheduleKey ? "" : "disabled"}>Remove Selected Schedule</button>
+    `;
+    organizerUpcomingSchedule.appendChild(controls);
+
+    controls.querySelector("#remove-selected-upcoming-schedule")?.addEventListener("click", () => {
+      if (!selectedUpcomingScheduleKey) {
+        return;
+      }
+      const [serviceId, date] = selectedUpcomingScheduleKey.split("::");
+      const targetEntry = history.find((entry) => entry.serviceId === serviceId && normalizeDate(entry.date) === normalizeDate(date));
+      const label = targetEntry?.label || serviceId;
+      if (!window.confirm(`Remove the selected PAW schedule for ${label} on ${formatValue("date", date)}?`)) {
+        return;
+      }
+      history = history.filter((entry) => !(entry.serviceId === serviceId && normalizeDate(entry.date) === normalizeDate(date)));
+      selectedUpcomingScheduleKey = "";
+      persistOrganizer();
+      renderOrganizer();
+    });
+  }
+
   upcomingEntries.forEach((entry) => {
+    const entryKey = `${entry.serviceId}::${normalizeDate(entry.date)}`;
     const card = document.createElement("article");
-    card.className = "person-schedule-card";
+    card.className = `person-schedule-card upcoming-schedule-card${selectedUpcomingScheduleKey === entryKey ? " is-selected" : ""}`;
+    if (canEditOrganizer()) {
+      card.tabIndex = 0;
+      card.role = "button";
+      card.setAttribute("aria-pressed", selectedUpcomingScheduleKey === entryKey ? "true" : "false");
+    }
     card.innerHTML = `
       <strong>${escapeHtml(entry.label)}</strong>
       <div class="person-schedule-meta">${escapeHtml(formatValue("date", entry.date))}</div>
@@ -3324,6 +3362,19 @@ function renderUpcomingOrganizerSchedule() {
       <div>${escapeHtml(formatValue("backup", entry.backup))}</div>
       <div>${escapeHtml(formatValue("musicians", entry.musicians))}</div>
     `;
+    if (canEditOrganizer()) {
+      const selectEntry = () => {
+        selectedUpcomingScheduleKey = selectedUpcomingScheduleKey === entryKey ? "" : entryKey;
+        renderUpcomingOrganizerSchedule();
+      };
+      card.addEventListener("click", selectEntry);
+      card.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          selectEntry();
+        }
+      });
+    }
     organizerUpcomingSchedule.appendChild(card);
   });
 }

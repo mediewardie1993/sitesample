@@ -1693,6 +1693,26 @@ select:focus,
   background: rgba(255, 255, 255, 0.04);
 }
 
+.upcoming-schedule-controls {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+
+.upcoming-schedule-card {
+  cursor: default;
+}
+
+.upcoming-schedule-card[role="button"] {
+  cursor: pointer;
+}
+
+.upcoming-schedule-card.is-selected {
+  border-color: rgba(88, 173, 125, 0.52);
+  background: rgba(88, 173, 125, 0.12);
+  box-shadow: 0 0 0 2px rgba(88, 173, 125, 0.12);
+}
+
 .person-schedule-head {
   display: flex;
   align-items: center;
