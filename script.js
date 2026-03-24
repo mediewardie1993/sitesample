@@ -1547,16 +1547,24 @@ function renderProfile() {
   profileGender.value = profile.gender || "";
   profileOccupation.value = profile.occupation || "";
   profileCivilStatus.value = profile.civilStatus || "";
-  profileNetworkName.value = profile.networkName || "";
+  if (profileNetworkName) {
+    profileNetworkName.value = profile.networkName || "";
+  }
   profileDisplayName.textContent = currentUser.name || "-";
   profileDisplayBirthday.textContent = profile.birthday ? formatValue("date", profile.birthday) : "-";
   profileDisplayContactNumber.textContent = profile.contactNumber || "-";
   profileDisplayGender.textContent = profile.gender || "-";
   profileDisplayOccupation.textContent = profile.occupation || "-";
   profileDisplayCivilStatus.textContent = profile.civilStatus || "-";
-  profileDisplayNetworkName.textContent = profile.networkName || "-";
-  profileNetworkDisplayRow.classList.toggle("app-hidden", !canEditNetworkName);
-  profileNetworkField.classList.toggle("app-hidden", !canEditNetworkName);
+  if (profileDisplayNetworkName) {
+    profileDisplayNetworkName.textContent = profile.networkName || "-";
+  }
+  if (profileNetworkDisplayRow) {
+    profileNetworkDisplayRow.classList.toggle("app-hidden", !canEditNetworkName);
+  }
+  if (profileNetworkField) {
+    profileNetworkField.classList.toggle("app-hidden", !canEditNetworkName);
+  }
 
   const photoSource = profile.photoData || "";
   profilePhotoPreview.classList.toggle("app-hidden", !photoSource);
@@ -2189,7 +2197,7 @@ function handleProfileSave(event) {
   const gender = profileGender.value;
   const occupation = profileOccupation.value.trim();
   const civilStatus = profileCivilStatus.value;
-  const networkName = profileNetworkName.value.trim();
+  const networkName = profileNetworkName ? profileNetworkName.value.trim() : "";
 
   if (!name || !birthday || !contactNumber || !gender) {
     profileMessage.textContent = "Full name, birthday, contact number, and gender are required.";
