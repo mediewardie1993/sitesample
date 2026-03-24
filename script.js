@@ -29,6 +29,7 @@ const registryMeta = {
 const musicianRoleDefinitions = [
   { key: "bassist", label: "Bassist" },
   { key: "guitarist", label: "Guitarist" },
+  { key: "rhythmGuitar", label: "Rhythm Guitar" },
   { key: "keyboard", label: "Keyboard" },
   { key: "drummer", label: "Drummer" }
 ];
