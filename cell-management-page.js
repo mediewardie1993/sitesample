@@ -71,7 +71,7 @@ const cellLeadershipOfficeLabels = {
 const cellManagementTreeLevels = [
   { label: "Senior Pastor", slots: ["A1"] },
   { label: "Admin Pastor", slots: ["B1"] },
-  { label: "Cell Management / Members", slots: ["C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10", "C11", "C12"] }
+  { label: "Ferdie Cell Members", slots: ["C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10", "C11", "C12"] }
 ];
 
 const loginRequiredCard = document.querySelector("#cell-login-required");
@@ -240,7 +240,13 @@ async function syncUsersFromSupabase() {
 
 function loadAuthState() {
   const saved = window.localStorage.getItem(AUTH_KEY);
-  const fallback = { users: defaultSeedUsers };
+  const fallback = {
+    users: defaultSeedUsers,
+    pending: [],
+    ministryRequests: [],
+    usernameRequests: [],
+    ministries: []
+  };
   let parsed = fallback;
 
   if (saved) {
@@ -261,7 +267,11 @@ function loadAuthState() {
   return {
     users: mergedUsers
       .map(normalizeUserAccount)
-      .filter((user) => !isExcludedLegacyOrTestAccount(user))
+      .filter((user) => !isExcludedLegacyOrTestAccount(user)),
+    pending: Array.isArray(parsed.pending) ? parsed.pending : [],
+    ministryRequests: Array.isArray(parsed.ministryRequests) ? parsed.ministryRequests : [],
+    usernameRequests: Array.isArray(parsed.usernameRequests) ? parsed.usernameRequests : [],
+    ministries: Array.isArray(parsed.ministries) ? parsed.ministries : []
   };
 }
 
@@ -656,11 +666,65 @@ function setLeaderNetworkAssignments(leaderId, assignments) {
   persistCellManagement();
 }
 
+function removeRecordFromAllNetworkAssignments(recordId) {
+  if (!recordId) {
+    return;
+  }
+
+  const nextAssignments = { ...(cellManagementState.networkAssignments ?? {}) };
+  Object.keys(nextAssignments).forEach((leaderId) => {
+    const assignments = { ...(nextAssignments[leaderId] ?? {}) };
+    let changed = false;
+    Object.keys(assignments).forEach((slotId) => {
+      if (assignments[slotId] === recordId) {
+        assignments[slotId] = "";
+        changed = true;
+      }
+    });
+    if (changed) {
+      nextAssignments[leaderId] = assignments;
+    }
+  });
+  cellManagementState.networkAssignments = nextAssignments;
+  persistCellManagement();
+}
+
+function assignRecordToFirstOpenNetworkSlot(leaderId, recordId) {
+  if (!leaderId || !recordId) {
+    return;
+  }
+
+  const assignments = getLeaderNetworkAssignments(leaderId);
+  const existingSlotId = Object.keys(assignments).find((slotId) => assignments[slotId] === recordId);
+  if (existingSlotId) {
+    return;
+  }
+
+  const openSlotId = getNetworkSlotIds().find((slotId) => !assignments[slotId]);
+  if (!openSlotId) {
+    return;
+  }
+
+  assignments[openSlotId] = recordId;
+  setLeaderNetworkAssignments(leaderId, assignments);
+}
+
 function getNetworkLeaderCandidates() {
   return sortCellManagementRecords(cellManagementState.records ?? []).filter((record) =>
     ["cellLeader", "networkLeader"].includes(record.discipleshipLevel)
     || ["cellManager", "adminPastor", "seniorPastor"].includes(record.effectiveLeadershipOffice)
   );
+}
+
+function getTransferTargetCandidates(record) {
+  return sortCellManagementRecords(cellManagementState.records ?? []).filter((entry) => {
+    if (!entry || entry.id === record?.id) {
+      return false;
+    }
+
+    return ["adminPastor", "cellManager"].includes(entry.effectiveLeadershipOffice)
+      || ["cellLeader", "networkLeader"].includes(entry.discipleshipLevel);
+  });
 }
 
 function getNetworkSlotAssignedRecord(leaderId, slotId) {
@@ -808,6 +872,8 @@ function buildLeaderWorkspace(selectedLeader, canManage) {
     record.id !== selectedLeader.id
     && ["visitor", "member"].includes(record.discipleshipLevel)
   );
+  const transferCandidates = getTransferTargetCandidates(selectedLeader);
+  const selectedLeaderCurrentLevel = selectedLeader.manualLevelOverride || selectedLeader.discipleshipLevel;
   const visibleSlots = getNetworkSlotIds().filter((slotId) => !hideEmptyNetworkSlots || assignments[slotId]);
 
   return `
@@ -823,13 +889,29 @@ function buildLeaderWorkspace(selectedLeader, canManage) {
         <strong>${escapeHtml(getCellDisplayPrioritySummary(selectedLeader) || getCellDiscipleshipLabel(selectedLeader.discipleshipLevel))}</strong>
         <div class="admin-readonly-meta">
           <div>Network: ${escapeHtml(selectedLeader.effectiveCellGroup || "-")}</div>
+          <div>Under: ${escapeHtml(selectedLeader.cellLeaderName || "-")}</div>
           <div>Invited Visitors: ${escapeHtml(getInvitedVisitorsForRecord(selectedLeader.id).map((entry) => entry.name).join(", ") || "-")}</div>
         </div>
       </div>
       ${canManage ? `
         <div class="managed-ministry-row">
-          <div class="admin-readonly-meta">${isProtected ? "Only the Creator can edit this protected leadership record." : "Use the pyramid slots below to assign or clear this leader's immediate members."}</div>
+          <div class="admin-readonly-meta">${isProtected ? "Only the Creator can edit this protected leadership record." : "Use Promote, Transfer, and Demote here. Transfer changes the person to another leader, which also changes the automatic group."}</div>
         </div>
+        ${!isProtected ? `
+          <div class="admin-actions">
+            <button class="ghost-btn cell-record-promote" type="button" data-record-id="${escapeHtml(selectedLeader.id)}">Promote</button>
+            <select class="cell-record-transfer-target" data-record-id="${escapeHtml(selectedLeader.id)}">
+              <option value="">Transfer to leader</option>
+              ${transferCandidates.map((record) => `<option value="${escapeHtml(record.id)}" ${selectedLeader.cellLeaderUserId === record.id ? "selected" : ""}>${escapeHtml(getRecordPickerLabel(record))}</option>`).join("")}
+            </select>
+            <button class="secondary-btn cell-record-transfer" type="button" data-record-id="${escapeHtml(selectedLeader.id)}">Transfer</button>
+            <button class="ghost-btn cell-record-demote" type="button" data-record-id="${escapeHtml(selectedLeader.id)}">Demote</button>
+          </div>
+          <div class="admin-readonly-meta">
+            <div>Current Level: ${escapeHtml(getCellDiscipleshipLabel(selectedLeaderCurrentLevel) || "-")}</div>
+            <div>Current Group: ${escapeHtml(selectedLeader.effectiveCellGroup || "-")}</div>
+          </div>
+        ` : ""}
       ` : ""}
       <div class="cell-tree">
         <div class="cell-tree-level">
@@ -1057,6 +1139,70 @@ function bindEditableControls() {
     });
   });
 
+  cellManagementRoot.querySelectorAll(".cell-record-promote").forEach((button) => {
+    button.addEventListener("click", () => {
+      const record = getCellManagementRecord(button.dataset.recordId || "");
+      if (!record || !canEditProtectedRecord(record)) {
+        return;
+      }
+      const order = ["visitor", "member", "cellLeader", "networkLeader"];
+      const currentIndex = order.indexOf(record.manualLevelOverride || record.discipleshipLevel);
+      updateCellRecord(record.id, (entry) => ({
+        ...entry,
+        manualLevelOverride: order[Math.min(order.length - 1, Math.max(0, currentIndex + 1))]
+      }));
+      selectedLeaderId = record.id;
+      renderWorkspace();
+    });
+  });
+
+  cellManagementRoot.querySelectorAll(".cell-record-demote").forEach((button) => {
+    button.addEventListener("click", () => {
+      const record = getCellManagementRecord(button.dataset.recordId || "");
+      if (!record || !canEditProtectedRecord(record)) {
+        return;
+      }
+      const order = ["visitor", "member", "cellLeader", "networkLeader"];
+      const currentIndex = order.indexOf(record.manualLevelOverride || record.discipleshipLevel);
+      updateCellRecord(record.id, (entry) => ({
+        ...entry,
+        manualLevelOverride: order[Math.max(0, currentIndex - 1)]
+      }));
+      selectedLeaderId = record.id;
+      renderWorkspace();
+    });
+  });
+
+  cellManagementRoot.querySelectorAll(".cell-record-transfer").forEach((button) => {
+    button.addEventListener("click", () => {
+      const recordId = button.dataset.recordId || "";
+      const record = getCellManagementRecord(recordId);
+      if (!record || !canEditProtectedRecord(record)) {
+        return;
+      }
+
+      const targetLeaderId = cellManagementRoot.querySelector(`.cell-record-transfer-target[data-record-id="${cssEscape(recordId)}"]`)?.value || "";
+      if (!targetLeaderId) {
+        return;
+      }
+
+      if (["visitor", "member"].includes(record.discipleshipLevel) && getCellLeaderAssignedCount(targetLeaderId, recordId) >= 12) {
+        window.alert("That leader is already handling 12 members.");
+        return;
+      }
+
+      removeRecordFromAllNetworkAssignments(recordId);
+      updateCellRecord(recordId, (entry) => ({
+        ...entry,
+        cellLeaderUserId: targetLeaderId
+      }));
+      assignRecordToFirstOpenNetworkSlot(targetLeaderId, recordId);
+
+      selectedLeaderId = recordId;
+      renderWorkspace();
+    });
+  });
+
   cellManagementRoot.querySelector("#toggle-empty-network-slots")?.addEventListener("click", () => {
     hideEmptyNetworkSlots = !hideEmptyNetworkSlots;
     renderWorkspace();
@@ -1071,6 +1217,9 @@ function bindEditableControls() {
       assignments[slotId] = recordId;
       setLeaderNetworkAssignments(leaderId, assignments);
       if (recordId) {
+        removeRecordFromAllNetworkAssignments(recordId);
+        assignments[slotId] = recordId;
+        setLeaderNetworkAssignments(leaderId, assignments);
         updateCellRecord(recordId, (record) => ({
           ...record,
           cellLeaderUserId: leaderId
@@ -1202,7 +1351,7 @@ function renderWorkspace() {
                   ];
                   return `
                     <tr>
-                      <td><strong>${escapeHtml(record.name)}</strong></td>
+                      <td><button class="ghost-btn cell-tree-name-link inline-name-link" type="button" data-record-id="${escapeHtml(record.id)}"><strong>${escapeHtml(record.name)}</strong></button></td>
                       <td>${escapeHtml(priorityLabel)}</td>
                       <td>${escapeHtml(record.invitedByName || "-")}</td>
                       <td>${escapeHtml(record.consolidatorName || "-")}</td>

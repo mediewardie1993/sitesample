@@ -569,33 +569,33 @@ initializeApp();
 
 function initializeApp() {
   initializeSeatEvents();
-  showLoginButton.addEventListener("click", () => setAuthMode("login"));
-  showRegisterButton.addEventListener("click", () => setAuthMode("register"));
-  loginForm.addEventListener("submit", handleLogin);
-  registerForm.addEventListener("submit", handleRegister);
-  registerContactNumber.addEventListener("input", enforcePhilippineContactPrefix);
-  reserveSeatButton.addEventListener("click", openSeatsPage);
+  showLoginButton?.addEventListener("click", () => setAuthMode("login"));
+  showRegisterButton?.addEventListener("click", () => setAuthMode("register"));
+  loginForm?.addEventListener("submit", handleLogin);
+  registerForm?.addEventListener("submit", handleRegister);
+  registerContactNumber?.addEventListener("input", enforcePhilippineContactPrefix);
+  reserveSeatButton?.addEventListener("click", openSeatsPage);
   seatEventSelect?.addEventListener("change", handleSeatEventChange);
   seatEventProposalForm?.addEventListener("submit", handleSeatEventProposalSubmit);
-  approveAllSeatsButton.addEventListener("click", approveAllSeatRequests);
-  clearAllSeatsButton.addEventListener("click", clearAllSeats);
-  confirmSeatRequestButton.addEventListener("click", confirmSeatRequests);
-  clearSeatRequestButton.addEventListener("click", clearPendingSeatSelections);
-  profileEditToggle.addEventListener("click", toggleProfileEditMode);
-  profileForm.addEventListener("submit", handleProfileSave);
-  profileContactNumber.addEventListener("input", enforceProfileContactPrefix);
-  profilePhotoForm.addEventListener("submit", handleProfilePhotoSave);
-  profileMinistryForm.addEventListener("submit", handleProfileMinistrySave);
-  profileSearchForm.addEventListener("submit", handleProfileSearch);
+  approveAllSeatsButton?.addEventListener("click", approveAllSeatRequests);
+  clearAllSeatsButton?.addEventListener("click", clearAllSeats);
+  confirmSeatRequestButton?.addEventListener("click", confirmSeatRequests);
+  clearSeatRequestButton?.addEventListener("click", clearPendingSeatSelections);
+  profileEditToggle?.addEventListener("click", toggleProfileEditMode);
+  profileForm?.addEventListener("submit", handleProfileSave);
+  profileContactNumber?.addEventListener("input", enforceProfileContactPrefix);
+  profilePhotoForm?.addEventListener("submit", handleProfilePhotoSave);
+  profileMinistryForm?.addEventListener("submit", handleProfileMinistrySave);
+  profileSearchForm?.addEventListener("submit", handleProfileSearch);
   ministryDetailBack?.addEventListener("click", () => {
     activeSection = "ministries";
     renderSections();
   });
   ministryDetailSubmit?.addEventListener("click", () => handleAnnouncementSubmit("ministryDetail"));
   ministryDetailGrantButton?.addEventListener("click", () => handleAnnouncementGrant("ministryDetail"));
-  changePasswordForm.addEventListener("submit", handlePasswordChange);
-  changeUsernameForm.addEventListener("submit", handleUsernameChangeRequest);
-  createMinistryForm.addEventListener("submit", handleCreateMinistry);
+  changePasswordForm?.addEventListener("submit", handlePasswordChange);
+  changeUsernameForm?.addEventListener("submit", handleUsernameChangeRequest);
+  createMinistryForm?.addEventListener("submit", handleCreateMinistry);
   navButtons.forEach((button) => {
     button.addEventListener("click", () => {
       activeSection = button.dataset.section;
@@ -603,40 +603,40 @@ function initializeApp() {
       startCarouselAutoplay();
     });
   });
-  registryForm.addEventListener("submit", handleRegistrySubmit);
-  pullPawProfilesButton.addEventListener("click", pullPawProfilesIntoRegistry);
+  registryForm?.addEventListener("submit", handleRegistrySubmit);
+  pullPawProfilesButton?.addEventListener("click", pullPawProfilesIntoRegistry);
   pastorRequestForm?.addEventListener("submit", handlePastorRequestSubmit);
-  personScheduleForm.addEventListener("submit", handlePersonScheduleSubmit);
-  saveAdonaiButton.addEventListener("click", () => exportRangePdf(pdfStartDateInput.value, pdfRangeMonthsSelect.value, "saturday"));
-  saveSundayButton.addEventListener("click", () => exportRangePdf(pdfStartDateInput.value, pdfRangeMonthsSelect.value, "sunday"));
-  saveAllButton.addEventListener("click", () => exportRangePdf(pdfStartDateInput.value, pdfRangeMonthsSelect.value));
-  resetDemoButton.addEventListener("click", resetOrganizer);
-  photoUploadForm.addEventListener("submit", handlePhotoUpload);
-  photoGrantButton.addEventListener("click", handlePhotoGrant);
-  photoGrantSection.addEventListener("change", renderPhotoGrantList);
-  fixedPhotoForm.addEventListener("submit", handleFixedPhotoUpload);
-  homeCarouselPrev.addEventListener("click", () => moveCarousel("sunday", -1));
-  homeCarouselNext.addEventListener("click", () => moveCarousel("sunday", 1));
-  adonaiCarouselPrev.addEventListener("click", () => moveCarousel("adonai", -1));
-  adonaiCarouselNext.addEventListener("click", () => moveCarousel("adonai", 1));
-  hamakomCarouselPrev.addEventListener("click", () => moveCarousel("hamakom", -1));
-  hamakomCarouselNext.addEventListener("click", () => moveCarousel("hamakom", 1));
-  agapeCarouselPrev.addEventListener("click", () => moveCarousel("agape", -1));
-  agapeCarouselNext.addEventListener("click", () => moveCarousel("agape", 1));
-  danceCarouselPrev.addEventListener("click", () => moveCarousel("dance", -1));
-  danceCarouselNext.addEventListener("click", () => moveCarousel("dance", 1));
-  kidsCarouselPrev.addEventListener("click", () => moveCarousel("kids", -1));
-  kidsCarouselNext.addEventListener("click", () => moveCarousel("kids", 1));
+  personScheduleForm?.addEventListener("submit", handlePersonScheduleSubmit);
+  saveAdonaiButton?.addEventListener("click", () => exportRangePdf(pdfStartDateInput.value, pdfRangeMonthsSelect.value, "saturday"));
+  saveSundayButton?.addEventListener("click", () => exportRangePdf(pdfStartDateInput.value, pdfRangeMonthsSelect.value, "sunday"));
+  saveAllButton?.addEventListener("click", () => exportRangePdf(pdfStartDateInput.value, pdfRangeMonthsSelect.value));
+  resetDemoButton?.addEventListener("click", resetOrganizer);
+  photoUploadForm?.addEventListener("submit", handlePhotoUpload);
+  photoGrantButton?.addEventListener("click", handlePhotoGrant);
+  photoGrantSection?.addEventListener("change", renderPhotoGrantList);
+  fixedPhotoForm?.addEventListener("submit", handleFixedPhotoUpload);
+  homeCarouselPrev?.addEventListener("click", () => moveCarousel("sunday", -1));
+  homeCarouselNext?.addEventListener("click", () => moveCarousel("sunday", 1));
+  adonaiCarouselPrev?.addEventListener("click", () => moveCarousel("adonai", -1));
+  adonaiCarouselNext?.addEventListener("click", () => moveCarousel("adonai", 1));
+  hamakomCarouselPrev?.addEventListener("click", () => moveCarousel("hamakom", -1));
+  hamakomCarouselNext?.addEventListener("click", () => moveCarousel("hamakom", 1));
+  agapeCarouselPrev?.addEventListener("click", () => moveCarousel("agape", -1));
+  agapeCarouselNext?.addEventListener("click", () => moveCarousel("agape", 1));
+  danceCarouselPrev?.addEventListener("click", () => moveCarousel("dance", -1));
+  danceCarouselNext?.addEventListener("click", () => moveCarousel("dance", 1));
+  kidsCarouselPrev?.addEventListener("click", () => moveCarousel("kids", -1));
+  kidsCarouselNext?.addEventListener("click", () => moveCarousel("kids", 1));
   Object.entries(announcementRefs).forEach(([sectionKey, refs]) => {
-    refs.submit.addEventListener("click", () => handleAnnouncementSubmit(sectionKey));
-    refs.grantButton.addEventListener("click", () => handleAnnouncementGrant(sectionKey));
+    refs.submit?.addEventListener("click", () => handleAnnouncementSubmit(sectionKey));
+    refs.grantButton?.addEventListener("click", () => handleAnnouncementGrant(sectionKey));
   });
-  adminModeButton.addEventListener("click", toggleAdminMode);
-  logoutButton.addEventListener("click", handleLogout);
-  siteLogo.addEventListener("load", handleLogoLoad);
-  siteLogo.addEventListener("error", handleLogoError);
+  adminModeButton?.addEventListener("click", toggleAdminMode);
+  logoutButton?.addEventListener("click", handleLogout);
+  siteLogo?.addEventListener("load", handleLogoLoad);
+  siteLogo?.addEventListener("error", handleLogoError);
   window.addEventListener("scroll", handleWindowScroll, { passive: true });
-  if (siteLogo.complete) {
+  if (siteLogo?.complete) {
     if (siteLogo.naturalWidth > 0) {
       handleLogoLoad();
     } else {
@@ -1498,15 +1498,23 @@ function renderApp() {
   adminModeButton.textContent = adminMode ? "Exit Admin" : "Admin";
   adminNavButton.classList.toggle("app-hidden", !(adminMode && hasMinistryApprovalAccess()));
   renderSections();
-  renderSeatLayout();
-  renderProfile();
-  renderMinistriesPage();
+  safeRenderSection("seat layout", renderSeatLayout);
+  safeRenderSection("profile", renderProfile);
+  safeRenderSection("ministries", renderMinistriesPage);
   if (activeSection === "ministryDetail" && typeof renderMinistryDetailPage === "function") {
-    renderMinistryDetailPage();
+    safeRenderSection("ministry detail", renderMinistryDetailPage);
   }
-  renderPhotos();
-  renderOrganizer();
-  renderAdmin();
+  safeRenderSection("photos", renderPhotos);
+  safeRenderSection("organizer", renderOrganizer);
+  safeRenderSection("admin", renderAdmin);
+}
+
+function safeRenderSection(label, renderer) {
+  try {
+    renderer();
+  } catch (error) {
+    console.error(`Failed to render ${label}.`, error);
+  }
 }
 
 function renderSections() {
@@ -1516,7 +1524,9 @@ function renderSections() {
   }
   sectionIds.forEach((sectionId) => {
     const section = document.querySelector(`#section-${sectionId}`);
-    section.classList.toggle("app-hidden", sectionId !== activeSection);
+    if (section) {
+      section.classList.toggle("app-hidden", sectionId !== activeSection);
+    }
   });
 
   navButtons.forEach((button) => {
