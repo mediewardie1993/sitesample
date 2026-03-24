@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JCCM Cell Management</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=20260324a">
+</head>
+<body class="standalone-page">
+  <main class="standalone-shell cell-standalone-shell">
+    <header class="standalone-topbar shell-card">
+      <div>
+        <p class="mini-label">JCCM Ministries</p>
+        <h1>Cell Management</h1>
+        <p class="standalone-copy">Tree, roster, and discipleship records live here now so the ministry page stays lighter and more stable.</p>
+      </div>
+      <div class="standalone-actions">
+        <a class="ghost-btn" href="./index.html">Back To Main Site</a>
+        <button id="cell-admin-toggle" class="secondary-btn" type="button" hidden>Turn On Admin</button>
+      </div>
+    </header>
+
+    <section id="cell-login-required" class="shell-card app-hidden">
+      <div class="section-heading">
+        <div>
+          <p class="mini-label">Session Required</p>
+          <h2>Log in from the main site first</h2>
+        </div>
+      </div>
+      <p class="standalone-copy">This page uses the same saved session as the main JCCM site. Open the main page, log in, then come back here.</p>
+      <a class="secondary-btn" href="./index.html">Open Main Site</a>
+    </section>
+
+    <section id="cell-session-bar" class="shell-card app-hidden">
+      <div class="standalone-session-row">
+        <div>
+          <p class="mini-label">Signed In</p>
+          <div id="cell-session-user" class="standalone-session-user"></div>
+        </div>
+        <div id="cell-session-mode" class="tag">View mode</div>
+      </div>
+    </section>
+
+    <div id="cell-management-root" class="app-hidden"></div>
+  </main>
+
+  <script src="cell-management-page.js?v=20260324a"></script>
+</body>
+</html>

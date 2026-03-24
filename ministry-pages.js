@@ -26,19 +26,18 @@ function attachOrganizerSectionToMinistryDetail() {
 }
 
 function buildCellManagementPanel() {
-  if (typeof renderCellManagementWorkspace === "function") {
-    return renderCellManagementWorkspace();
-  }
-
-  const fallback = document.createElement("section");
-  fallback.className = "managed-ministry-row ministry-card";
-  fallback.innerHTML = `
+  const panel = document.createElement("section");
+  panel.className = "managed-ministry-row ministry-card ministry-launch-card";
+  panel.innerHTML = `
     <div class="ministry-card-head">
-      <strong>Cell Management Page</strong>
+      <strong>Cell Management Workspace</strong>
     </div>
-    <p class="ministry-card-copy">Cell Management tools are loading.</p>
+    <p class="ministry-card-copy">Open the dedicated Cell Management page for the tree, roster, and discipleship records.</p>
+    <div class="admin-actions">
+      <a class="secondary-btn" href="./cell-management.html">Open Cell Management</a>
+    </div>
   `;
-  return fallback;
+  return panel;
 }
 
 function getAnnouncementBoardConfig(sectionKey) {
@@ -71,16 +70,21 @@ function renderMinistriesPage() {
     card.className = "managed-ministry-row ministry-card";
 
     const isWorshipTeam = ministry === "Praise And Worship Team";
+    const isCellManagement = ministry === "Cell Management";
     card.innerHTML = `
       <div class="ministry-card-head">
         <button class="ghost-btn ministry-open-link" type="button">${escapeHtml(ministry)}</button>
       </div>
-      <p class="ministry-card-copy">${isWorshipTeam ? "Open this ministry page to view updates and the schedule link." : "Open this ministry page to view announcements."}</p>
+      <p class="ministry-card-copy">${isCellManagement ? "Open the dedicated Cell Management workspace." : (isWorshipTeam ? "Open this ministry page to view updates and the schedule link." : "Open this ministry page to view announcements.")}</p>
     `;
 
     const openButton = card.querySelector(".ministry-open-link");
     if (openButton) {
       openButton.addEventListener("click", () => {
+        if (isCellManagement) {
+          window.location.href = "./cell-management.html";
+          return;
+        }
         selectedMinistryPage = ministry;
         if (typeof persistSelectedMinistryPage === "function") {
           persistSelectedMinistryPage();

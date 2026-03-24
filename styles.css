@@ -828,6 +828,59 @@ code {
   font-weight: 600;
 }
 
+.ministry-detail-extra {
+  display: grid;
+  gap: 16px;
+  margin-top: 14px;
+}
+
+.standalone-page {
+  min-height: 100vh;
+}
+
+.standalone-shell {
+  width: min(1180px, calc(100% - 32px));
+  margin: 28px auto 40px;
+  display: grid;
+  gap: 16px;
+}
+
+.standalone-topbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: flex-start;
+}
+
+.standalone-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.standalone-copy {
+  margin: 8px 0 0;
+  max-width: 760px;
+}
+
+.standalone-session-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+}
+
+.standalone-session-user {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.cell-page-grid {
+  display: grid;
+  gap: 16px;
+}
+
 .announcement-grant-panel {
   margin-top: 22px;
   padding-top: 18px;
@@ -966,6 +1019,10 @@ code {
   gap: 14px;
 }
 
+.ministry-launch-card {
+  gap: 14px;
+}
+
 .ministry-card-head strong {
   font-size: 1.05rem;
 }
@@ -1003,6 +1060,10 @@ code {
 .cell-management-workspace {
   display: grid;
   gap: 18px;
+  width: 100%;
+}
+
+.cell-standalone-shell .shell-card {
   width: 100%;
 }
 
@@ -1070,6 +1131,18 @@ code {
 .cell-tree-node select,
 .cell-tree-node .admin-actions button {
   font-size: 0.72rem;
+}
+
+@media (max-width: 760px) {
+  .standalone-topbar,
+  .standalone-session-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .standalone-actions {
+    justify-content: flex-start;
+  }
 }
 
 .cell-tree-node .admin-actions {
