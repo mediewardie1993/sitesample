@@ -710,7 +710,33 @@ function resolveAssignableSelection(selectedValue, extraPayload = {}) {
   return selectedValue;
 }
 
+function getPrimaryRowRecords() {
+  const ferdieId = "cell-seed-ferdie";
+  const officePriority = { cellManager: 0, primaryLeader: 1, "": 2 };
+  return [...(cellManagementState.records ?? [])]
+    .filter((record) =>
+      record.id !== ferdieId
+      && (
+        record.cellLeaderUserId === ferdieId
+        || getEffectiveLeadershipOfficeValue(record) === "primaryLeader"
+      )
+    )
+    .sort((left, right) => {
+      const leftOffice = getEffectiveLeadershipOfficeValue(left);
+      const rightOffice = getEffectiveLeadershipOfficeValue(right);
+      const officeCompare = (officePriority[leftOffice] ?? 9) - (officePriority[rightOffice] ?? 9);
+      if (officeCompare !== 0) {
+        return officeCompare;
+      }
+      return (left.name || "").localeCompare(right.name || "");
+    });
+}
+
 function getCellTreeAssignedRecord(slotId) {
+  if (slotId.startsWith("C")) {
+    const index = Number(slotId.slice(1)) - 1;
+    return getPrimaryRowRecords()[index] ?? null;
+  }
   const recordId = cellManagementState.treeAssignments?.[slotId] || "";
   return getCellManagementRecord(recordId);
 }
@@ -877,7 +903,7 @@ function renderCellManagementTree(records, canManage) {
                     <strong>${escapeHtml(slotId)}</strong>
                     <button class="ghost-btn cell-tree-name-link" type="button" data-record-id="${escapeHtml(assigned?.id || "")}" ${assigned ? "" : "disabled"}>${escapeHtml(assigned?.name || "Empty slot")}</button>
                     <div class="person-schedule-meta">${escapeHtml(summary)}</div>
-                    ${canManage && canEditProtectedRecord(assigned) ? `
+                    ${canManage && (slotId.startsWith("C") || canEditProtectedRecord(assigned)) ? `
                       <select class="cell-tree-select" data-slot-id="${escapeHtml(slotId)}">
                         ${buildAssignableSelectionOptions(getSelectableExistingMemberRecords(assigned?.id || ""), availableProfiles, assigned?.id || "", "Assign record")}
                       </select>
@@ -1362,14 +1388,15 @@ function bindEditableControls() {
       const selectedValue = cellManagementRoot.querySelector(`.cell-tree-select[data-slot-id="${cssEscape(slotId)}"]`)?.value || "";
       const defaultLeaderId = slotId.startsWith("C") ? "cell-seed-ferdie" : "";
       const recordId = resolveAssignableSelection(selectedValue, { cellLeaderUserId: defaultLeaderId });
-      cellManagementState.treeAssignments = { ...(cellManagementState.treeAssignments ?? {}), [slotId]: recordId };
       if (recordId && defaultLeaderId) {
         updateCellRecord(recordId, (record) => ({
           ...record,
           cellLeaderUserId: defaultLeaderId
         }));
+      } else {
+        cellManagementState.treeAssignments = { ...(cellManagementState.treeAssignments ?? {}), [slotId]: recordId };
+        persistCellManagement();
       }
-      persistCellManagement();
       renderWorkspace();
     });
   });
@@ -1377,6 +1404,17 @@ function bindEditableControls() {
   cellManagementRoot.querySelectorAll(".cell-tree-clear").forEach((button) => {
     button.addEventListener("click", () => {
       const slotId = button.dataset.slotId;
+      if (slotId.startsWith("C")) {
+        const assigned = getCellTreeAssignedRecord(slotId);
+        if (assigned) {
+          updateCellRecord(assigned.id, (record) => ({
+            ...record,
+            cellLeaderUserId: ""
+          }));
+        }
+        renderWorkspace();
+        return;
+      }
       const nextAssignments = { ...(cellManagementState.treeAssignments ?? {}) };
       delete nextAssignments[slotId];
       cellManagementState.treeAssignments = nextAssignments;
