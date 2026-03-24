@@ -87,6 +87,7 @@ let adminMode = restoreAdminMode();
 let cellManagementState = loadCellManagementState();
 let selectedRecordId = "";
 let selectedLeaderId = "";
+let transferPromptRecordId = "";
 let hideEmptyNetworkSlots = true;
 let remoteUserSyncInFlight = false;
 
@@ -512,6 +513,33 @@ function getManagedCellProfiles() {
     .sort((left, right) => (left.name || left.username || "").localeCompare(right.name || right.username || ""));
 }
 
+function getSelectableExistingMemberRecords(excludeRecordId = "", excludeLeaderId = "") {
+  return sortCellManagementRecords(cellManagementState.records ?? []).filter((record) =>
+    record.id !== excludeRecordId
+    && record.id !== excludeLeaderId
+    && ["visitor", "member"].includes(record.discipleshipLevel)
+  );
+}
+
+function getSelectionOptionValueForUser(userId) {
+  return `user:${userId}`;
+}
+
+function buildAssignableSelectionOptions(existingRecords, availableProfiles, selectedValue = "", emptyLabel = "Assign member") {
+  const recordOptions = existingRecords.map((record) => ({
+    value: record.id,
+    label: `${record.name}${record.effectiveCellGroup ? ` | ${record.effectiveCellGroup}` : ""}`
+  }));
+  const profileOptions = availableProfiles.map((user) => ({
+    value: getSelectionOptionValueForUser(user.id),
+    label: `${user.name || user.username} | Registered user`
+  }));
+
+  return [`<option value="">${escapeHtml(emptyLabel)}</option>`, ...[...recordOptions, ...profileOptions].map((option) =>
+    `<option value="${escapeHtml(option.value)}" ${selectedValue === option.value ? "selected" : ""}>${escapeHtml(option.label)}</option>`
+  )].join("");
+}
+
 function getEligibleConsolidators() {
   return (cellManagementState.records ?? []).filter((record) => ["cellLeader", "networkLeader"].includes(record.discipleshipLevel));
 }
@@ -638,6 +666,46 @@ function addCellManagementRecord(payload) {
   cellManagementState.records = [...(cellManagementState.records ?? []), nextRecord];
   persistCellManagement();
   return true;
+}
+
+function createRecordFromRegisteredUser(userId, extraPayload = {}) {
+  const alreadyLinked = (cellManagementState.records ?? []).find((record) => record.userId === userId);
+  if (alreadyLinked) {
+    return alreadyLinked.id;
+  }
+
+  const added = addCellManagementRecord({
+    userId,
+    leadershipOffice: extraPayload.leadershipOffice || "",
+    invitedByUserId: extraPayload.invitedByUserId || "",
+    consolidatorUserId: extraPayload.consolidatorUserId || "",
+    cellLeaderUserId: extraPayload.cellLeaderUserId || "",
+    manualLevelOverride: extraPayload.manualLevelOverride || "",
+    consolidationCount: extraPayload.consolidationCount || 0,
+    successfullyRetainedVisitorCount: extraPayload.successfullyRetainedVisitorCount || 0,
+    raisedCellLeadersCount: extraPayload.raisedCellLeadersCount || 0,
+    preEncounterCompleted: Boolean(extraPayload.preEncounterCompleted),
+    encounterCompleted: Boolean(extraPayload.encounterCompleted),
+    postEncounterCompleted: Boolean(extraPayload.postEncounterCompleted)
+  });
+
+  if (!added) {
+    return "";
+  }
+
+  return (cellManagementState.records ?? []).find((record) => record.userId === userId)?.id || "";
+}
+
+function resolveAssignableSelection(selectedValue, extraPayload = {}) {
+  if (!selectedValue) {
+    return "";
+  }
+
+  if (selectedValue.startsWith("user:")) {
+    return createRecordFromRegisteredUser(selectedValue.slice(5), extraPayload);
+  }
+
+  return selectedValue;
 }
 
 function getCellTreeAssignedRecord(slotId) {
@@ -772,6 +840,7 @@ function canManageCellManagement() {
 }
 
 function renderCellManagementTree(records, canManage) {
+  const availableProfiles = getManagedCellProfiles();
   return `
     <section class="shell-card">
       <div class="section-heading">
@@ -808,8 +877,7 @@ function renderCellManagementTree(records, canManage) {
                     <div class="person-schedule-meta">${escapeHtml(summary)}</div>
                     ${canManage && canEditProtectedRecord(assigned) ? `
                       <select class="cell-tree-select" data-slot-id="${escapeHtml(slotId)}">
-                        <option value="">Assign record</option>
-                        ${records.map((record) => `<option value="${escapeHtml(record.id)}" ${assigned?.id === record.id ? "selected" : ""}>${escapeHtml(record.name)}</option>`).join("")}
+                        ${buildAssignableSelectionOptions(getSelectableExistingMemberRecords(assigned?.id || ""), availableProfiles, assigned?.id || "", "Assign record")}
                       </select>
                       <div class="admin-actions">
                         <button class="secondary-btn cell-tree-save" type="button" data-slot-id="${escapeHtml(slotId)}">Save</button>
@@ -868,13 +936,12 @@ function buildLeaderWorkspace(selectedLeader, canManage) {
 
   const isProtected = !canEditProtectedRecord(selectedLeader);
   const assignments = getLeaderNetworkAssignments(selectedLeader.id);
-  const memberCandidates = sortCellManagementRecords(cellManagementState.records ?? []).filter((record) =>
-    record.id !== selectedLeader.id
-    && ["visitor", "member"].includes(record.discipleshipLevel)
-  );
+  const memberCandidates = getSelectableExistingMemberRecords(selectedLeader.id, selectedLeader.id);
+  const availableProfiles = getManagedCellProfiles();
   const transferCandidates = getTransferTargetCandidates(selectedLeader);
   const selectedLeaderCurrentLevel = selectedLeader.manualLevelOverride || selectedLeader.discipleshipLevel;
   const visibleSlots = getNetworkSlotIds().filter((slotId) => !hideEmptyNetworkSlots || assignments[slotId]);
+  const transferOpen = transferPromptRecordId === selectedLeader.id;
 
   return `
     <section class="shell-card">
@@ -900,13 +967,19 @@ function buildLeaderWorkspace(selectedLeader, canManage) {
         ${!isProtected ? `
           <div class="admin-actions">
             <button class="ghost-btn cell-record-promote" type="button" data-record-id="${escapeHtml(selectedLeader.id)}">Promote</button>
-            <select class="cell-record-transfer-target" data-record-id="${escapeHtml(selectedLeader.id)}">
-              <option value="">Transfer to leader</option>
-              ${transferCandidates.map((record) => `<option value="${escapeHtml(record.id)}" ${selectedLeader.cellLeaderUserId === record.id ? "selected" : ""}>${escapeHtml(getRecordPickerLabel(record))}</option>`).join("")}
-            </select>
-            <button class="secondary-btn cell-record-transfer" type="button" data-record-id="${escapeHtml(selectedLeader.id)}">Transfer</button>
+            <button class="secondary-btn cell-record-start-transfer" type="button" data-record-id="${escapeHtml(selectedLeader.id)}">${transferOpen ? "Choose Destination" : "Transfer"}</button>
             <button class="ghost-btn cell-record-demote" type="button" data-record-id="${escapeHtml(selectedLeader.id)}">Demote</button>
           </div>
+          ${transferOpen ? `
+            <div class="admin-actions">
+              <select class="cell-record-transfer-target" data-record-id="${escapeHtml(selectedLeader.id)}">
+                <option value="">Transfer to leader</option>
+                ${transferCandidates.map((record) => `<option value="${escapeHtml(record.id)}" ${selectedLeader.cellLeaderUserId === record.id ? "selected" : ""}>${escapeHtml(getRecordPickerLabel(record))}</option>`).join("")}
+              </select>
+              <button class="secondary-btn cell-record-transfer" type="button" data-record-id="${escapeHtml(selectedLeader.id)}">Confirm Transfer</button>
+              <button class="ghost-btn cell-record-cancel-transfer" type="button" data-record-id="${escapeHtml(selectedLeader.id)}">Cancel</button>
+            </div>
+          ` : ""}
           <div class="admin-readonly-meta">
             <div>Current Level: ${escapeHtml(getCellDiscipleshipLabel(selectedLeaderCurrentLevel) || "-")}</div>
             <div>Current Group: ${escapeHtml(selectedLeader.effectiveCellGroup || "-")}</div>
@@ -926,8 +999,7 @@ function buildLeaderWorkspace(selectedLeader, canManage) {
                   <div class="person-schedule-meta">${escapeHtml(assigned ? (assigned.effectiveCellGroup || getCellDiscipleshipLabel(assigned.discipleshipLevel)) : "Open position")}</div>
                   ${canManage && !isProtected ? `
                     <select class="leader-network-select" data-leader-id="${escapeHtml(selectedLeader.id)}" data-slot-id="${escapeHtml(slotId)}">
-                      <option value="">Assign member</option>
-                      ${memberCandidates.map((record) => `<option value="${escapeHtml(record.id)}" ${assigned?.id === record.id ? "selected" : ""}>${escapeHtml(record.name)}</option>`).join("")}
+                      ${buildAssignableSelectionOptions(memberCandidates, availableProfiles, assigned?.id || "", "Assign member")}
                     </select>
                     <div class="admin-actions">
                       <button class="secondary-btn leader-network-save" type="button" data-leader-id="${escapeHtml(selectedLeader.id)}" data-slot-id="${escapeHtml(slotId)}">Save</button>
@@ -1145,6 +1217,9 @@ function bindEditableControls() {
       if (!record || !canEditProtectedRecord(record)) {
         return;
       }
+      if (!window.confirm(`Promote ${record.name}?`)) {
+        return;
+      }
       const order = ["visitor", "member", "cellLeader", "networkLeader"];
       const currentIndex = order.indexOf(record.manualLevelOverride || record.discipleshipLevel);
       updateCellRecord(record.id, (entry) => ({
@@ -1162,6 +1237,9 @@ function bindEditableControls() {
       if (!record || !canEditProtectedRecord(record)) {
         return;
       }
+      if (!window.confirm(`Demote ${record.name}?`)) {
+        return;
+      }
       const order = ["visitor", "member", "cellLeader", "networkLeader"];
       const currentIndex = order.indexOf(record.manualLevelOverride || record.discipleshipLevel);
       updateCellRecord(record.id, (entry) => ({
@@ -1169,6 +1247,29 @@ function bindEditableControls() {
         manualLevelOverride: order[Math.max(0, currentIndex - 1)]
       }));
       selectedLeaderId = record.id;
+      renderWorkspace();
+    });
+  });
+
+  cellManagementRoot.querySelectorAll(".cell-record-start-transfer").forEach((button) => {
+    button.addEventListener("click", () => {
+      const record = getCellManagementRecord(button.dataset.recordId || "");
+      if (!record || !canEditProtectedRecord(record)) {
+        return;
+      }
+      if (!window.confirm(`Open transfer options for ${record.name}?`)) {
+        return;
+      }
+      transferPromptRecordId = record.id;
+      renderWorkspace();
+    });
+  });
+
+  cellManagementRoot.querySelectorAll(".cell-record-cancel-transfer").forEach((button) => {
+    button.addEventListener("click", () => {
+      if (transferPromptRecordId === (button.dataset.recordId || "")) {
+        transferPromptRecordId = "";
+      }
       renderWorkspace();
     });
   });
@@ -1185,6 +1286,10 @@ function bindEditableControls() {
       if (!targetLeaderId) {
         return;
       }
+      const targetLeader = getCellManagementRecord(targetLeaderId);
+      if (!window.confirm(`Transfer ${record.name} to ${targetLeader?.name || "this leader"}?`)) {
+        return;
+      }
 
       if (["visitor", "member"].includes(record.discipleshipLevel) && getCellLeaderAssignedCount(targetLeaderId, recordId) >= 12) {
         window.alert("That leader is already handling 12 members.");
@@ -1198,6 +1303,7 @@ function bindEditableControls() {
       }));
       assignRecordToFirstOpenNetworkSlot(targetLeaderId, recordId);
 
+      transferPromptRecordId = "";
       selectedLeaderId = recordId;
       renderWorkspace();
     });
@@ -1212,7 +1318,8 @@ function bindEditableControls() {
     button.addEventListener("click", () => {
       const leaderId = button.dataset.leaderId || "";
       const slotId = button.dataset.slotId || "";
-      const recordId = cellManagementRoot.querySelector(`.leader-network-select[data-leader-id="${cssEscape(leaderId)}"][data-slot-id="${cssEscape(slotId)}"]`)?.value || "";
+      const selectedValue = cellManagementRoot.querySelector(`.leader-network-select[data-leader-id="${cssEscape(leaderId)}"][data-slot-id="${cssEscape(slotId)}"]`)?.value || "";
+      const recordId = resolveAssignableSelection(selectedValue, { cellLeaderUserId: leaderId });
       const assignments = getLeaderNetworkAssignments(leaderId);
       assignments[slotId] = recordId;
       setLeaderNetworkAssignments(leaderId, assignments);
@@ -1250,8 +1357,16 @@ function bindEditableControls() {
   cellManagementRoot.querySelectorAll(".cell-tree-save").forEach((button) => {
     button.addEventListener("click", () => {
       const slotId = button.dataset.slotId;
-      const recordId = cellManagementRoot.querySelector(`.cell-tree-select[data-slot-id="${cssEscape(slotId)}"]`)?.value || "";
+      const selectedValue = cellManagementRoot.querySelector(`.cell-tree-select[data-slot-id="${cssEscape(slotId)}"]`)?.value || "";
+      const defaultLeaderId = slotId.startsWith("C") ? "cell-seed-ferdie" : "";
+      const recordId = resolveAssignableSelection(selectedValue, { cellLeaderUserId: defaultLeaderId });
       cellManagementState.treeAssignments = { ...(cellManagementState.treeAssignments ?? {}), [slotId]: recordId };
+      if (recordId && defaultLeaderId) {
+        updateCellRecord(recordId, (record) => ({
+          ...record,
+          cellLeaderUserId: defaultLeaderId
+        }));
+      }
       persistCellManagement();
       renderWorkspace();
     });
