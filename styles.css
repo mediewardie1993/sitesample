@@ -1143,6 +1143,25 @@ code {
   line-height: 1.2;
 }
 
+.cell-tree-name-link,
+.inline-name-link {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  text-align: center;
+}
+
+.cell-tree-name-link:hover,
+.cell-tree-name-link:focus-visible,
+.inline-name-link:hover,
+.inline-name-link:focus-visible {
+  color: var(--accent-strong);
+  text-decoration: underline;
+}
+
 .cell-tree-node .person-schedule-meta {
   text-align: center;
   font-size: 0.7rem;

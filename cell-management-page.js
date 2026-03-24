@@ -5,6 +5,8 @@ const SESSION_KEY = "jccm-site-session-v1";
 const SESSION_TEMP_KEY = "jccm-site-session-temp-v1";
 const ADMIN_MODE_KEY = "jccm-admin-mode-v1";
 const CELL_MANAGEMENT_KEY = "jccm-cell-management-v1";
+const SUPABASE_URL = "https://gxgdetvlehwlxsenpijn.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_IAmOapMof9S8qv-rX8WoLg_fBXDqBTs";
 
 const defaultSeedUsers = [
   {
@@ -84,6 +86,9 @@ let currentUser = restoreSession();
 let adminMode = restoreAdminMode();
 let cellManagementState = loadCellManagementState();
 let selectedRecordId = "";
+let selectedLeaderId = "";
+let hideEmptyNetworkSlots = true;
+let remoteUserSyncInFlight = false;
 
 function sortEntries(entries) {
   return [...entries].sort((left, right) => String(left || "").localeCompare(String(right || "")));
@@ -141,6 +146,96 @@ function normalizeUserAccount(user) {
     titles: Array.isArray(user?.titles) ? user.titles : [],
     profile: user?.profile ?? {}
   };
+}
+
+function normalizeRemoteUserAccount(user) {
+  if (!user || typeof user !== "object") {
+    return null;
+  }
+
+  return normalizeUserAccount({
+    id: user.id,
+    name: user.name || user.full_name || user.username || "",
+    username: user.username || "",
+    usernames: [user.username].filter(Boolean),
+    createdAt: user.createdAt || user.created_at || new Date().toISOString(),
+    role: user.role || "member",
+    isCreator: Boolean(user.isCreator),
+    titles: Array.isArray(user.titles) ? user.titles : [],
+    ministries: Array.isArray(user.ministries) ? user.ministries : [],
+    profile: {
+      birthday: user.profile?.birthday || "",
+      contactNumber: user.profile?.contactNumber || "",
+      gender: user.profile?.gender || "",
+      occupation: user.profile?.occupation || "",
+      civilStatus: user.profile?.civilStatus || "",
+      networkName: user.profile?.networkName || "",
+      photo: user.profile?.photo || ""
+    }
+  });
+}
+
+async function callSupabaseRpc(functionName, payload = {}) {
+  try {
+    const response = await window.fetch(`${SUPABASE_URL}/rest/v1/rpc/${functionName}`, {
+      method: "POST",
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      return {};
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.warn(`Supabase RPC ${functionName} failed on Cell Management page.`, error);
+    return {};
+  }
+}
+
+function syncRemoteUserLocally(remoteUser) {
+  const normalized = normalizeRemoteUserAccount(remoteUser);
+  if (!normalized || isExcludedLegacyOrTestAccount(normalized)) {
+    return null;
+  }
+
+  const existingIndex = authState.users.findIndex((user) => user.id === normalized.id || user.username === normalized.username);
+  if (existingIndex >= 0) {
+    authState.users[existingIndex] = {
+      ...authState.users[existingIndex],
+      ...normalized,
+      profile: {
+        ...(authState.users[existingIndex].profile ?? {}),
+        ...(normalized.profile ?? {})
+      }
+    };
+  } else {
+    authState.users.push(normalized);
+  }
+
+  window.localStorage.setItem(AUTH_KEY, JSON.stringify(authState));
+  return normalized;
+}
+
+async function syncUsersFromSupabase() {
+  if (remoteUserSyncInFlight) {
+    return;
+  }
+
+  remoteUserSyncInFlight = true;
+  try {
+    const result = await callSupabaseRpc("list_users_admin", {});
+    const users = Array.isArray(result?.users) ? result.users : [];
+    users.forEach((user) => syncRemoteUserLocally(user));
+    currentUser = restoreSession();
+  } finally {
+    remoteUserSyncInFlight = false;
+  }
 }
 
 function loadAuthState() {
@@ -203,6 +298,7 @@ function getDefaultCellManagementState() {
   return {
     records: getSeedCellManagementRecords(),
     groups: [],
+    networkAssignments: {},
     treeAssignments: {
       A1: "cell-seed-babes",
       B1: "cell-seed-ferdie",
@@ -247,6 +343,9 @@ function loadCellManagementState() {
     return {
       records: mergedRecords,
       groups: Array.isArray(parsed.groups) ? sortEntries(parsed.groups.map((value) => String(value || "").trim()).filter(Boolean)) : [],
+      networkAssignments: parsed.networkAssignments && typeof parsed.networkAssignments === "object"
+        ? parsed.networkAssignments
+        : {},
       treeAssignments: parsed.treeAssignments && typeof parsed.treeAssignments === "object"
         ? { ...defaults.treeAssignments, ...parsed.treeAssignments }
         : defaults.treeAssignments
@@ -390,7 +489,10 @@ function getCellManagementRecord(recordId) {
 }
 
 function getRegisteredChurchProfiles() {
-  return authState.users.filter((user) => !user.isCreator && !isExcludedLegacyOrTestAccount(user)).map(normalizeUserAccount);
+  return authState.users
+    .filter((user) => !user.isCreator && !isExcludedLegacyOrTestAccount(user))
+    .map(normalizeUserAccount)
+    .filter((user) => String(user.profile?.gender || "").toLowerCase() === "male");
 }
 
 function getManagedCellProfiles() {
@@ -533,6 +635,60 @@ function getCellTreeAssignedRecord(slotId) {
   return getCellManagementRecord(recordId);
 }
 
+function getNetworkSlotIds() {
+  return Array.from({ length: 12 }, (_, index) => `N${index + 1}`);
+}
+
+function getLeaderNetworkAssignments(leaderId) {
+  const saved = cellManagementState.networkAssignments?.[leaderId];
+  const defaults = Object.fromEntries(getNetworkSlotIds().map((slotId) => [slotId, ""]));
+  return {
+    ...defaults,
+    ...(saved && typeof saved === "object" ? saved : {})
+  };
+}
+
+function setLeaderNetworkAssignments(leaderId, assignments) {
+  cellManagementState.networkAssignments = {
+    ...(cellManagementState.networkAssignments ?? {}),
+    [leaderId]: assignments
+  };
+  persistCellManagement();
+}
+
+function getNetworkLeaderCandidates() {
+  return sortCellManagementRecords(cellManagementState.records ?? []).filter((record) =>
+    ["cellLeader", "networkLeader"].includes(record.discipleshipLevel)
+    || ["cellManager", "adminPastor", "seniorPastor"].includes(record.effectiveLeadershipOffice)
+  );
+}
+
+function getNetworkSlotAssignedRecord(leaderId, slotId) {
+  const assignments = getLeaderNetworkAssignments(leaderId);
+  return getCellManagementRecord(assignments[slotId] || "");
+}
+
+function canEditProtectedRecord(record) {
+  if (!record) {
+    return false;
+  }
+
+  if (isCreator()) {
+    return true;
+  }
+
+  return !["seniorPastor", "adminPastor"].includes(record.effectiveLeadershipOffice);
+}
+
+function canGrantLeadershipOffice() {
+  if (isCreator()) {
+    return true;
+  }
+
+  const record = getCurrentUserCellRecord();
+  return ["adminPastor", "seniorPastor"].includes(record?.effectiveLeadershipOffice || record?.leadershipOffice || "");
+}
+
 function getCurrentUserCellRecord() {
   if (!currentUser) {
     return null;
@@ -584,9 +740,9 @@ function renderCellManagementTree(records, canManage) {
                 return `
                   <article class="cell-tree-node" title="${escapeHtml(hoverStats)}">
                     <strong>${escapeHtml(slotId)}</strong>
-                    <div class="cell-tree-name">${escapeHtml(assigned?.name || "Empty slot")}</div>
+                    <button class="ghost-btn cell-tree-name-link" type="button" data-record-id="${escapeHtml(assigned?.id || "")}" ${assigned ? "" : "disabled"}>${escapeHtml(assigned?.name || "Empty slot")}</button>
                     <div class="person-schedule-meta">${escapeHtml(summary)}</div>
-                    ${canManage ? `
+                    ${canManage && canEditProtectedRecord(assigned) ? `
                       <select class="cell-tree-select" data-slot-id="${escapeHtml(slotId)}">
                         <option value="">Assign record</option>
                         ${records.map((record) => `<option value="${escapeHtml(record.id)}" ${assigned?.id === record.id ? "selected" : ""}>${escapeHtml(record.name)}</option>`).join("")}
@@ -629,6 +785,81 @@ function buildCellManagementRoster() {
       </div>
     </article>
   `).join("");
+}
+
+function buildLeaderWorkspace(selectedLeader, canManage) {
+  if (!selectedLeader) {
+    return `
+      <section class="shell-card">
+        <div class="section-heading">
+          <div>
+            <p class="mini-label">Leader View</p>
+            <h2>Select a name in the pyramid</h2>
+          </div>
+        </div>
+        <div class="empty-card">Click a leader name in the pyramid to open their focused network view.</div>
+      </section>
+    `;
+  }
+
+  const isProtected = !canEditProtectedRecord(selectedLeader);
+  const assignments = getLeaderNetworkAssignments(selectedLeader.id);
+  const memberCandidates = sortCellManagementRecords(cellManagementState.records ?? []).filter((record) =>
+    record.id !== selectedLeader.id
+    && ["visitor", "member"].includes(record.discipleshipLevel)
+  );
+  const visibleSlots = getNetworkSlotIds().filter((slotId) => !hideEmptyNetworkSlots || assignments[slotId]);
+
+  return `
+    <section class="shell-card">
+      <div class="section-heading">
+        <div>
+          <p class="mini-label">Leader View</p>
+          <h2>${escapeHtml(selectedLeader.name)}</h2>
+        </div>
+        <button id="toggle-empty-network-slots" class="ghost-btn" type="button">${hideEmptyNetworkSlots ? "Show Empty Positions" : "Hide Empty Positions"}</button>
+      </div>
+      <div class="managed-ministry-row">
+        <strong>${escapeHtml(getCellDisplayPrioritySummary(selectedLeader) || getCellDiscipleshipLabel(selectedLeader.discipleshipLevel))}</strong>
+        <div class="admin-readonly-meta">
+          <div>Network: ${escapeHtml(selectedLeader.effectiveCellGroup || "-")}</div>
+          <div>Invited Visitors: ${escapeHtml(getInvitedVisitorsForRecord(selectedLeader.id).map((entry) => entry.name).join(", ") || "-")}</div>
+        </div>
+      </div>
+      ${canManage ? `
+        <div class="managed-ministry-row">
+          <div class="admin-readonly-meta">${isProtected ? "Only the Creator can edit this protected leadership record." : "Use the pyramid slots below to assign or clear this leader's immediate members."}</div>
+        </div>
+      ` : ""}
+      <div class="cell-tree">
+        <div class="cell-tree-level">
+          <div class="cell-tree-level-label">Focused Network</div>
+          <div class="cell-tree-row">
+            ${visibleSlots.map((slotId) => {
+              const assigned = getCellManagementRecord(assignments[slotId] || "");
+              return `
+                <article class="cell-tree-node" title="${escapeHtml(assigned ? `${assigned.name} | ${getCellDiscipleshipLabel(assigned.discipleshipLevel)}` : `${slotId} is currently unassigned.`)}">
+                  <strong>${escapeHtml(slotId)}</strong>
+                  <button class="ghost-btn cell-tree-name-link" type="button" data-record-id="${escapeHtml(assigned?.id || "")}" ${assigned ? "" : "disabled"}>${escapeHtml(assigned?.name || "Empty slot")}</button>
+                  <div class="person-schedule-meta">${escapeHtml(assigned ? (assigned.effectiveCellGroup || getCellDiscipleshipLabel(assigned.discipleshipLevel)) : "Open position")}</div>
+                  ${canManage && !isProtected ? `
+                    <select class="leader-network-select" data-leader-id="${escapeHtml(selectedLeader.id)}" data-slot-id="${escapeHtml(slotId)}">
+                      <option value="">Assign member</option>
+                      ${memberCandidates.map((record) => `<option value="${escapeHtml(record.id)}" ${assigned?.id === record.id ? "selected" : ""}>${escapeHtml(record.name)}</option>`).join("")}
+                    </select>
+                    <div class="admin-actions">
+                      <button class="secondary-btn leader-network-save" type="button" data-leader-id="${escapeHtml(selectedLeader.id)}" data-slot-id="${escapeHtml(slotId)}">Save</button>
+                      <button class="ghost-btn leader-network-clear" type="button" data-leader-id="${escapeHtml(selectedLeader.id)}" data-slot-id="${escapeHtml(slotId)}">Clear</button>
+                    </div>
+                  ` : ""}
+                </article>
+              `;
+            }).join("")}
+          </div>
+        </div>
+      </div>
+    </section>
+  `;
 }
 
 function buildCellManagementEditor(canManage, availableProfiles, consolidators, cellLeaders) {
@@ -815,6 +1046,58 @@ function bindEditableControls() {
     renderWorkspace();
   });
 
+  cellManagementRoot.querySelectorAll(".cell-tree-name-link").forEach((button) => {
+    button.addEventListener("click", () => {
+      const recordId = button.dataset.recordId || "";
+      if (!recordId) {
+        return;
+      }
+      selectedLeaderId = recordId;
+      renderWorkspace();
+    });
+  });
+
+  cellManagementRoot.querySelector("#toggle-empty-network-slots")?.addEventListener("click", () => {
+    hideEmptyNetworkSlots = !hideEmptyNetworkSlots;
+    renderWorkspace();
+  });
+
+  cellManagementRoot.querySelectorAll(".leader-network-save").forEach((button) => {
+    button.addEventListener("click", () => {
+      const leaderId = button.dataset.leaderId || "";
+      const slotId = button.dataset.slotId || "";
+      const recordId = cellManagementRoot.querySelector(`.leader-network-select[data-leader-id="${cssEscape(leaderId)}"][data-slot-id="${cssEscape(slotId)}"]`)?.value || "";
+      const assignments = getLeaderNetworkAssignments(leaderId);
+      assignments[slotId] = recordId;
+      setLeaderNetworkAssignments(leaderId, assignments);
+      if (recordId) {
+        updateCellRecord(recordId, (record) => ({
+          ...record,
+          cellLeaderUserId: leaderId
+        }));
+      }
+      renderWorkspace();
+    });
+  });
+
+  cellManagementRoot.querySelectorAll(".leader-network-clear").forEach((button) => {
+    button.addEventListener("click", () => {
+      const leaderId = button.dataset.leaderId || "";
+      const slotId = button.dataset.slotId || "";
+      const assignments = getLeaderNetworkAssignments(leaderId);
+      const recordId = assignments[slotId] || "";
+      assignments[slotId] = "";
+      setLeaderNetworkAssignments(leaderId, assignments);
+      if (recordId) {
+        updateCellRecord(recordId, (record) => ({
+          ...record,
+          cellLeaderUserId: record.cellLeaderUserId === leaderId ? "" : record.cellLeaderUserId
+        }));
+      }
+      renderWorkspace();
+    });
+  });
+
   cellManagementRoot.querySelectorAll(".cell-tree-save").forEach((button) => {
     button.addEventListener("click", () => {
       const slotId = button.dataset.slotId;
@@ -867,21 +1150,19 @@ function renderWorkspace() {
   const availableProfiles = getManagedCellProfiles();
   const consolidators = getEligibleConsolidators();
   const cellLeaders = getEligibleCellLeaders();
-  const sortedCellRecords = sortCellManagementRecords(cellManagementState.records ?? []);
+  const leaderCandidates = getNetworkLeaderCandidates();
+  if (selectedLeaderId && !getCellManagementRecord(selectedLeaderId)) {
+    selectedLeaderId = "";
+  }
+  const selectedLeader = getCellManagementRecord(selectedLeaderId) || leaderCandidates[0] || null;
+  const sortedCellRecords = sortCellManagementRecords(cellManagementState.records ?? []).filter((record) =>
+    ["visitor", "member"].includes(record.discipleshipLevel)
+  );
 
   cellManagementRoot.innerHTML = `
     <div class="cell-page-grid">
-      ${buildCellManagementEditor(canManage, availableProfiles, consolidators, cellLeaders)}
       ${renderCellManagementTree(cellManagementState.records ?? [], canManage)}
-      <section class="shell-card">
-        <div class="section-heading">
-          <div>
-            <p class="mini-label">Roster</p>
-            <h2>Grouped by cell leader</h2>
-          </div>
-        </div>
-        <div class="admin-list">${buildCellManagementRoster()}</div>
-      </section>
+      ${buildLeaderWorkspace(selectedLeader, canManage)}
       <section class="shell-card">
         <div class="section-heading">
           <div>
@@ -902,7 +1183,6 @@ function renderWorkspace() {
                   <th>Cell Group</th>
                   <th>Progress</th>
                   <th>Invited Visitors</th>
-                  ${canManage ? "<th>Actions</th>" : ""}
                 </tr>
               </thead>
               <tbody>
@@ -911,6 +1191,7 @@ function renderWorkspace() {
                   const levelLabel = getCellDiscipleshipLabel(record.discipleshipLevel);
                   const priorityLabel = [leadershipOffice, levelLabel].filter(Boolean).join(" | ") || "-";
                   const hideCellLeader = ["seniorPastor", "adminPastor"].includes(record.effectiveLeadershipOffice);
+                  const linkedLeader = record.cellLeaderUserId ? getCellManagementRecord(record.cellLeaderUserId) : null;
                   const progressParts = [
                     `Consolidations: ${record.consolidationCount || 0}`,
                     `Retained: ${record.successfullyRetainedVisitorCount || 0}`,
@@ -925,15 +1206,10 @@ function renderWorkspace() {
                       <td>${escapeHtml(priorityLabel)}</td>
                       <td>${escapeHtml(record.invitedByName || "-")}</td>
                       <td>${escapeHtml(record.consolidatorName || "-")}</td>
-                      <td>${escapeHtml(hideCellLeader ? "-" : (record.cellLeaderName || "-"))}</td>
+                      <td>${hideCellLeader || !linkedLeader ? escapeHtml("-") : `<button class="ghost-btn cell-tree-name-link inline-name-link" type="button" data-record-id="${escapeHtml(linkedLeader.id)}">${escapeHtml(record.cellLeaderName || "-")}</button>`}</td>
                       <td>${escapeHtml(record.effectiveCellGroup || "-")}</td>
                       <td>${escapeHtml(progressParts.join(" | "))}</td>
                       <td>${escapeHtml(getInvitedVisitorsForRecord(record.id).map((entry) => entry.name).join(", ") || "-")}</td>
-                      ${canManage ? `
-                        <td>
-                          <button class="secondary-btn cell-management-edit" type="button" data-record-id="${escapeHtml(record.id)}">Edit</button>
-                        </td>
-                      ` : ""}
                     </tr>
                   `;
                 }).join("")}
@@ -945,9 +1221,7 @@ function renderWorkspace() {
     </div>
   `;
 
-  if (canManage) {
-    bindEditableControls();
-  }
+  bindEditableControls();
 }
 
 adminToggle?.addEventListener("click", () => {
@@ -959,4 +1233,7 @@ adminToggle?.addEventListener("click", () => {
   renderWorkspace();
 });
 
-renderWorkspace();
+(async () => {
+  await syncUsersFromSupabase();
+  renderWorkspace();
+})();
