@@ -254,6 +254,10 @@ code {
   box-shadow: none;
 }
 
+.organizer-export-actions {
+  margin-top: 10px;
+}
+
 .site-header,
 .site-nav {
   display: flex;
@@ -852,6 +856,14 @@ code {
   align-items: flex-start;
 }
 
+.paw-standalone-shell .standalone-topbar,
+.paw-standalone-shell .paw-embed-card {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
 .standalone-actions {
   display: flex;
   gap: 10px;
@@ -873,9 +885,10 @@ code {
   display: block;
   width: 100%;
   min-height: 0;
-  height: 88vh;
+  height: 1800px;
   border: 0;
   background: transparent;
+  overflow: hidden;
 }
 
 .standalone-session-row {
@@ -1139,6 +1152,18 @@ body.organizer-embed-mode {
 
 .organizer-embed-mode #section-organizer > .organizer-grid {
   gap: 20px;
+}
+
+.organizer-embed-mode #section-organizer .service-section,
+.organizer-embed-mode #section-organizer .person-schedule-card,
+.organizer-embed-mode #section-organizer .empty-card {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.organizer-embed-mode #section-organizer .assignment-table th {
+  background: transparent;
 }
 
 .cell-management-actions {

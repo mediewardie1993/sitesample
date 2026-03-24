@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Cormorant+Garamond:wght@600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260325m">
+  <link rel="stylesheet" href="styles.css?v=20260325s">
 </head>
 <body>
   <div id="login-gate" class="auth-shell">
@@ -748,30 +748,6 @@
       </section>
 
       <section id="section-organizer" class="page-section app-hidden">
-        <header class="hero organizer-hero">
-          <div class="hero-actions">
-            <label class="year-picker">
-              <span>From Date</span>
-              <input id="pdf-start-date" type="date">
-            </label>
-            <label class="year-picker">
-              <span>Months</span>
-              <select id="pdf-range-months">
-                <option value="1">1 month</option>
-                <option value="2">2 months</option>
-                <option value="3" selected>3 months</option>
-                <option value="6">6 months</option>
-                <option value="9">9 months</option>
-                <option value="12">12 months</option>
-              </select>
-            </label>
-            <button id="save-adonai-pdf" class="secondary-btn" type="button">Save Adonai PDF</button>
-            <button id="save-sunday-pdf" class="secondary-btn" type="button">Save Sunday PDF</button>
-            <button id="save-all-pdf" class="primary-btn" type="button">Save Both PDF</button>
-            <button id="reset-demo" class="ghost-btn" type="button">Reset Demo Data</button>
-          </div>
-        </header>
-
         <section class="shell-card organizer-upcoming-card">
           <div class="section-heading">
             <div>
@@ -840,6 +816,30 @@
         </section>
 
         <section class="service-sections" id="service-sections"></section>
+
+        <section class="organizer-export-actions">
+          <div class="hero-actions">
+            <label class="year-picker">
+              <span>From Date</span>
+              <input id="pdf-start-date" type="date">
+            </label>
+            <label class="year-picker">
+              <span>Months</span>
+              <select id="pdf-range-months">
+                <option value="1">1 month</option>
+                <option value="2">2 months</option>
+                <option value="3" selected>3 months</option>
+                <option value="6">6 months</option>
+                <option value="9">9 months</option>
+                <option value="12">12 months</option>
+              </select>
+            </label>
+            <button id="save-adonai-pdf" class="secondary-btn" type="button">Save Adonai PDF</button>
+            <button id="save-sunday-pdf" class="secondary-btn" type="button">Save Sunday PDF</button>
+            <button id="save-all-pdf" class="primary-btn" type="button">Save Both PDF</button>
+            <button id="reset-demo" class="ghost-btn" type="button">Reset Demo Data</button>
+          </div>
+        </section>
       </section>
 
       <section id="section-admin" class="page-section app-hidden">
@@ -961,8 +961,8 @@
     </section>
   </template>
 
-  <script src="ministry-pages.js?v=20260325m"></script>
-  <script src="script.js?v=20260325m"></script>
+  <script src="ministry-pages.js?v=20260325s"></script>
+  <script src="script.js?v=20260325s"></script>
 </body>
 </html>
 

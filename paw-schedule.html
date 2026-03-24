@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260325m">
+  <link rel="stylesheet" href="styles.css?v=20260325s">
 </head>
 <body class="standalone-page">
   <main class="standalone-shell paw-standalone-shell">
@@ -15,7 +15,6 @@
       <div>
         <p class="mini-label">JCCM Ministries</p>
         <h1>Praise And Worship Team Schedule</h1>
-        <p class="standalone-copy">This dedicated workspace keeps the PAW schedule lighter, cleaner, and easier to navigate.</p>
       </div>
       <div class="standalone-actions">
         <a class="ghost-btn" href="./index.html">Back To Main Site</a>
@@ -28,6 +27,7 @@
         class="standalone-embed-frame"
         src="./index.html?embed=organizer"
         title="Praise And Worship Team Schedule"
+        scrolling="no"
         loading="eager"></iframe>
     </section>
   </main>
@@ -41,13 +41,19 @@
       try {
         const doc = pawEmbedFrame.contentDocument;
         if (!doc || !doc.body) return;
+        const appShell = doc.querySelector("#app-shell");
+        const organizerSection = doc.querySelector("#section-organizer");
         pawEmbedFrame.style.height = "0px";
         const nextHeight = Math.max(
           doc.body.scrollHeight,
           doc.documentElement ? doc.documentElement.scrollHeight : 0,
-          doc.body.offsetHeight
+          doc.body.offsetHeight,
+          appShell ? appShell.scrollHeight : 0,
+          appShell ? appShell.getBoundingClientRect().height : 0,
+          organizerSection ? organizerSection.scrollHeight : 0,
+          organizerSection ? organizerSection.getBoundingClientRect().height : 0
         );
-        pawEmbedFrame.style.height = `${Math.max(nextHeight + 12, window.innerHeight * 0.88)}px`;
+        pawEmbedFrame.style.height = `${Math.max(nextHeight + 180, 1800)}px`;
       } catch (error) {
         // Ignore resize failures while the iframe is still loading.
       }
