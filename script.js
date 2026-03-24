@@ -3380,6 +3380,17 @@ function renderUpcomingOrganizerSchedule() {
         return;
       }
       history = history.filter((entry) => !(entry.serviceId === serviceId && normalizeDate(entry.date) === normalizeDate(date)));
+      const liveService = state.services[serviceId];
+      if (liveService && normalizeDate(liveService.date) === normalizeDate(date)) {
+        state.services[serviceId] = {
+          ...liveService,
+          date: "",
+          worshipLeader: "",
+          backup: [],
+          musicians: [],
+          musicianAssignments: createEmptyMusicianAssignments()
+        };
+      }
       selectedUpcomingScheduleKey = "";
       persistOrganizer();
       renderOrganizer();
