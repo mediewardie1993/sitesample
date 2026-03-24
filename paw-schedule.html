@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260325l">
+  <link rel="stylesheet" href="styles.css?v=20260325m">
 </head>
 <body class="standalone-page">
   <main class="standalone-shell paw-standalone-shell">
@@ -24,11 +24,58 @@
 
     <section class="shell-card paw-embed-card">
       <iframe
+        id="paw-embed-frame"
         class="standalone-embed-frame"
         src="./index.html?embed=organizer"
         title="Praise And Worship Team Schedule"
         loading="eager"></iframe>
     </section>
   </main>
+  <script>
+    const pawEmbedFrame = document.getElementById("paw-embed-frame");
+    let pawEmbedObserver = null;
+    let pawEmbedInterval = null;
+
+    function resizePawEmbed() {
+      if (!pawEmbedFrame) return;
+      try {
+        const doc = pawEmbedFrame.contentDocument;
+        if (!doc || !doc.body) return;
+        pawEmbedFrame.style.height = "0px";
+        const nextHeight = Math.max(
+          doc.body.scrollHeight,
+          doc.documentElement ? doc.documentElement.scrollHeight : 0,
+          doc.body.offsetHeight
+        );
+        pawEmbedFrame.style.height = `${Math.max(nextHeight + 12, window.innerHeight * 0.88)}px`;
+      } catch (error) {
+        // Ignore resize failures while the iframe is still loading.
+      }
+    }
+
+    pawEmbedFrame?.addEventListener("load", () => {
+      resizePawEmbed();
+      try {
+        const doc = pawEmbedFrame.contentDocument;
+        const win = pawEmbedFrame.contentWindow;
+        if (!doc || !doc.body) return;
+        pawEmbedObserver?.disconnect();
+        pawEmbedObserver = new MutationObserver(() => window.requestAnimationFrame(resizePawEmbed));
+        pawEmbedObserver.observe(doc.body, {
+          childList: true,
+          subtree: true,
+          attributes: true,
+          characterData: true
+        });
+        win?.addEventListener("resize", resizePawEmbed);
+        clearInterval(pawEmbedInterval);
+        pawEmbedInterval = window.setInterval(resizePawEmbed, 800);
+      } catch (error) {
+        // Ignore observer failures in fallback states.
+      }
+    });
+
+    window.addEventListener("resize", resizePawEmbed);
+  </script>
 </body>
 </html>
