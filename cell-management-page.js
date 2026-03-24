@@ -906,30 +906,41 @@ function canManageCellManagement() {
   return ["seniorPastor", "adminPastor", "cellManager"].includes(record?.leadershipOffice || "");
 }
 
-function renderCellManagementTree(records, canManage) {
-  const availableProfiles = getManagedCellProfiles();
-  return `
-    <section class="shell-card cell-structure-panel">
+  function renderCellManagementTree(records, canManage) {
+    const availableProfiles = getManagedCellProfiles();
+    return `
+      <section class="shell-card cell-structure-panel">
       <div class="section-heading">
         <div>
           <p class="mini-label">Tree</p>
           <h2>Cell Management structure</h2>
         </div>
       </div>
-      <div class="cell-tree">
-        ${cellManagementTreeLevels.map((level) => `
-          <div class="cell-tree-level">
-            <div class="cell-tree-level-label">
-              ${level.slots[0]?.startsWith("C")
-                ? `<button id="toggle-ferdz-members" class="cell-tree-drawer-toggle" type="button">${escapeHtml(level.label)} ${showFerdzMembers ? "▾" : "▸"}</button>`
-                : escapeHtml(level.label)}
+        <div class="cell-tree">
+          ${cellManagementTreeLevels.map((level) => `
+            ${(() => {
+              const levelSlots = level.slots[0]?.startsWith("C")
+                ? level.slots.filter((slotId) => getCellTreeAssignedRecord(slotId))
+                : level.slots;
+              const showAddCellMember = canManage
+                && level.slots[0]?.startsWith("C")
+                && getPrimaryRowRecords().length < 12;
+              return `
+            <div class="cell-tree-level">
+              <div class="cell-tree-level-label">
+                ${level.slots[0]?.startsWith("C")
+                  ? `<button id="toggle-ferdz-members" class="cell-tree-drawer-toggle" type="button">${escapeHtml(level.label)} ${showFerdzMembers ? "▾" : "▸"}</button>`
+                  : escapeHtml(level.label)}
             </div>
-            <div class="cell-tree-row${level.slots[0]?.startsWith("C") && !showFerdzMembers ? " app-hidden" : ""}">
-              ${level.slots.map((slotId) => {
-                const assigned = getCellTreeAssignedRecord(slotId);
-                const summary = assigned ? (getCellDisplayPrioritySummary(assigned) || getCellDiscipleshipLabel(assigned.discipleshipLevel)) : "Unassigned";
-                  const hoverStats = assigned
-                  ? [
+            <div
+              class="cell-tree-row${level.slots[0]?.startsWith("C") ? " cell-tree-drawer cell-tree-ferdz-pane" : ""}${level.slots[0]?.startsWith("C") && !showFerdzMembers ? " is-collapsed" : ""}"
+              ${level.slots[0]?.startsWith("C") ? 'id="ferdz-members-drawer"' : ""}
+            >
+                ${levelSlots.map((slotId) => {
+                  const assigned = getCellTreeAssignedRecord(slotId);
+                  const summary = assigned ? (getCellDisplayPrioritySummary(assigned) || getCellDiscipleshipLabel(assigned.discipleshipLevel)) : "Unassigned";
+                    const hoverStats = assigned
+                    ? [
                     assigned.name || "",
                     getCellDisplayPrioritySummary(assigned) || getCellDiscipleshipLabel(assigned.discipleshipLevel),
                     `Invited By: ${assigned.invitedByName || "-"}`,
@@ -941,21 +952,28 @@ function renderCellManagementTree(records, canManage) {
                     `Raised Leaders: ${assigned.raisedCellLeadersCount || 0}`
                   ].join(" | ")
                   : `${slotId} is currently unassigned.`;
-                return `
-                  <article class="cell-tree-node" title="${escapeHtml(hoverStats)}">
-                    <strong>${escapeHtml(slotId)}</strong>
-                    <button class="cell-tree-name-link" type="button" data-record-id="${escapeHtml(assigned?.id || "")}" ${assigned ? "" : "disabled"}>${escapeHtml(assigned?.name || "Empty slot")}</button>
-                    <div class="person-schedule-meta">${escapeHtml(summary)}</div>
+                  return `
+                    <article class="cell-tree-node" title="${escapeHtml(hoverStats)}">
+                      <button class="cell-tree-name-link" type="button" data-record-id="${escapeHtml(assigned?.id || "")}" ${assigned ? "" : "disabled"}>${escapeHtml(assigned?.name || "Empty slot")}</button>
+                      <div class="person-schedule-meta">${escapeHtml(summary)}</div>
+                    </article>
+                  `;
+                }).join("")}
+                ${showAddCellMember ? `
+                  <article class="cell-tree-node cell-tree-add-node">
+                    <button id="open-ferdz-add-member" class="secondary-btn" type="button">Add Cell Member</button>
+                    <div class="person-schedule-meta">${escapeHtml(`${12 - getPrimaryRowRecords().length} slot${12 - getPrimaryRowRecords().length === 1 ? "" : "s"} left`)}</div>
                   </article>
-                `;
-              }).join("")}
+                ` : ""}
+              </div>
             </div>
-          </div>
-        `).join("")}
-      </div>
-    </section>
-  `;
-}
+          `;
+            })()}
+          `).join("")}
+        </div>
+      </section>
+    `;
+  }
 
 function buildCellManagementRoster() {
   const groups = {};
@@ -1057,12 +1075,11 @@ function buildLeaderWorkspace(selectedLeader, canManage) {
         <div class="leader-network-list">
           ${visibleSlots.map((slotId) => {
             const assigned = slotRecords[slotId];
-            return `
-              <article class="leader-network-entry" title="${escapeHtml(assigned ? `${assigned.name} | ${getCellDiscipleshipLabel(assigned.discipleshipLevel)}` : `${slotId} is currently unassigned.`)}">
-                <div class="leader-network-entry-head">
-                  <strong>${escapeHtml(slotId)}</strong>
-                  <button class="cell-tree-name-link" type="button" data-record-id="${escapeHtml(assigned?.id || "")}" ${assigned ? "" : "disabled"}>${escapeHtml(assigned?.name || "Empty slot")}</button>
-                </div>
+              return `
+                <article class="leader-network-entry" title="${escapeHtml(assigned ? `${assigned.name} | ${getCellDiscipleshipLabel(assigned.discipleshipLevel)}` : `${slotId} is currently unassigned.`)}">
+                  <div class="leader-network-entry-head">
+                    <button class="cell-tree-name-link" type="button" data-record-id="${escapeHtml(assigned?.id || "")}" ${assigned ? "" : "disabled"}>${escapeHtml(assigned?.name || "Empty slot")}</button>
+                  </div>
                 <div class="person-schedule-meta">${escapeHtml(assigned ? (assigned.effectiveCellGroup || getCellDiscipleshipLabel(assigned.discipleshipLevel)) : "Open position")}</div>
                 ${canManage && !isProtected && !assigned ? `
                   <div class="leader-network-entry-controls">
@@ -1294,6 +1311,19 @@ function bindEditableControls() {
 
   cellManagementRoot.querySelector("#toggle-ferdz-members")?.addEventListener("click", () => {
     showFerdzMembers = !showFerdzMembers;
+    const drawer = cellManagementRoot.querySelector("#ferdz-members-drawer");
+    if (drawer) {
+      drawer.classList.toggle("is-collapsed", !showFerdzMembers);
+    }
+    const toggle = cellManagementRoot.querySelector("#toggle-ferdz-members");
+    if (toggle) {
+      toggle.textContent = `Ferdz Cell Members ${showFerdzMembers ? "▾" : "▸"}`;
+      toggle.setAttribute("aria-expanded", showFerdzMembers ? "true" : "false");
+    }
+  });
+
+  cellManagementRoot.querySelector("#open-ferdz-add-member")?.addEventListener("click", () => {
+    setSelectedLeader("cell-seed-ferdie");
     renderWorkspace();
   });
 

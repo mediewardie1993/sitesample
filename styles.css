@@ -1105,10 +1105,22 @@ code {
   align-self: start;
 }
 
+.cell-structure-panel {
+  position: relative;
+  overflow: visible;
+  z-index: 30;
+}
+
+.cell-leader-panel {
+  position: relative;
+  z-index: 1;
+}
+
 .cell-tree-level {
   display: grid;
   gap: 12px;
   justify-items: center;
+  position: relative;
 }
 
 .cell-tree-level-label {
@@ -1141,6 +1153,44 @@ code {
   gap: 10px;
   justify-items: stretch;
   width: 100%;
+}
+
+.cell-tree-drawer {
+  position: absolute;
+  top: 0;
+  left: calc(100% + 18px);
+  z-index: 60;
+  width: min(360px, 78vw);
+  max-height: min(72vh, 760px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  opacity: 1;
+  transform: translateX(0);
+  transition: opacity 180ms ease, transform 240ms ease;
+  scrollbar-width: none;
+}
+
+.cell-tree-drawer::-webkit-scrollbar {
+  display: none;
+}
+
+.cell-tree-drawer.is-collapsed {
+  opacity: 0;
+  transform: translateX(-28px);
+  pointer-events: none;
+}
+
+.cell-tree-ferdz-pane {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 12px;
+  padding: 16px 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: rgba(9, 35, 24, 0.94);
+  box-shadow: -18px 0 42px rgba(0, 0, 0, 0.28);
 }
 
 .cell-tree-node {
@@ -1231,9 +1281,32 @@ code {
   font-size: 0.72rem;
 }
 
+.cell-tree-ferdz-pane .cell-tree-node {
+  flex: 0 0 180px;
+  width: 180px;
+  min-height: 116px;
+}
+
+.cell-tree-add-node {
+  align-content: center;
+}
+
+.cell-tree-add-node .secondary-btn {
+  justify-self: start;
+}
+
 @media (max-width: 760px) {
   .cell-page-grid {
     grid-template-columns: 1fr;
+  }
+
+  .cell-tree-ferdz-pane {
+    position: static;
+    width: 100%;
+    max-height: none;
+    overflow: visible;
+    box-shadow: none;
+    display: grid;
   }
 
   .standalone-topbar,
