@@ -486,6 +486,7 @@ const personScheduleResults = document.querySelector("#person-schedule-results")
 const organizerUpcomingSchedule = document.querySelector("#organizer-upcoming-schedule");
 let selectedUpcomingScheduleKey = "";
 let openMusicianPanelServiceId = "";
+let openBackupPanelServiceId = "";
 
 let state = loadState();
 let history = loadHistory();
@@ -3250,7 +3251,7 @@ function renderOrganizer() {
   const syncedRegistry = getPawProfileRegistryNames();
   syncCurrentServicesToHistory();
   if (!pdfStartDateInput.value) {
-    pdfStartDateInput.value = getEarliestKnownDate() || normalizeDate(new Date().toISOString().slice(0, 10));
+    pdfStartDateInput.value = normalizeDate(new Date().toISOString().slice(0, 10));
   }
   const editingEnabled = canEditOrganizer();
   registryCard.classList.toggle("app-hidden", !editingEnabled);
@@ -3329,7 +3330,7 @@ function renderPersonScheduleControls() {
   }
 
   if (!personScheduleStart.value) {
-    personScheduleStart.value = pdfStartDateInput.value || getEarliestKnownDate() || normalizeDate(new Date().toISOString().slice(0, 10));
+    personScheduleStart.value = pdfStartDateInput.value || normalizeDate(new Date().toISOString().slice(0, 10));
   }
 }
 
@@ -3520,8 +3521,13 @@ function renderServices() {
     bindMusicianRolePanel(section, service, syncedRegistry);
     updateConflictDisplay(section, service);
     applyOrganizerPermissions(section, editingEnabled);
+    bindAddScheduleButton(section, service, editingEnabled);
 
     const musicianDetail = section.querySelector(".musician-role-select");
+    const backupDetail = section.querySelector(".multi-select");
+    if (backupDetail && openBackupPanelServiceId === service.id) {
+      backupDetail.open = true;
+    }
     if (musicianDetail && openMusicianPanelServiceId === service.id) {
       musicianDetail.open = true;
     }
@@ -3554,13 +3560,8 @@ function bindServiceDateSelect(section, service) {
 
 function getServiceDateOptions(serviceId) {
   const targetDay = serviceId === "saturday" ? 6 : 0;
-  const anchorDate = getReasonableDate(
-    state.services[serviceId].date,
-    pdfStartDateInput.value,
-    normalizeDate(new Date().toISOString().slice(0, 10))
-  );
-  const startDate = addDays(anchorDate, -182);
-  const firstMatch = findNextWeekday(startDate, targetDay);
+  const today = normalizeDate(new Date().toISOString().slice(0, 10));
+  const firstMatch = findNextWeekday(today, targetDay);
   const options = [];
 
   for (let index = 0; index < 104; index += 1) {
@@ -3578,6 +3579,41 @@ function populateDateInput(input, dataList, options, selectedValue, serviceId) {
   dataList.id = listId;
   dataList.innerHTML = options.map((date) => `<option value="${escapeHtml(date)}" label="${escapeHtml(formatValue("date", date))}"></option>`).join("");
   input.value = selectedValue ?? "";
+}
+
+function serviceHasAssignments(service) {
+  return Boolean(
+    service.worshipLeader
+    || (service.backup ?? []).length
+    || getMusicianAssignmentNames(service.musicianAssignments).length
+  );
+}
+
+function bindAddScheduleButton(section, service, editingEnabled) {
+  const button = section.querySelector(".add-schedule-btn");
+  if (!button) {
+    return;
+  }
+
+  button.disabled = !editingEnabled;
+  button.classList.toggle("app-hidden", !editingEnabled);
+
+  button.addEventListener("click", () => {
+    if (!service.date) {
+      window.alert("Please choose a service date first.");
+      return;
+    }
+    if (!serviceHasAssignments(service)) {
+      window.alert("Please assign at least one team member before adding the schedule.");
+      return;
+    }
+
+    upsertHistoryForService(service.id);
+    selectedUpcomingScheduleKey = `${service.id}::${normalizeDate(service.date)}`;
+    persistOrganizer();
+    renderUpcomingOrganizerSchedule();
+    window.alert(`${service.title} was added to Upcoming Schedule.`);
+  });
 }
 
 function bindSimpleSelect(section, service, key, selector, options, placeholder) {
@@ -3738,8 +3774,15 @@ function bindLimitedMultiSelect(section, service, key, options, limit, optionsSe
   const optionsWrap = section.querySelector(optionsSelector);
   const selectedWrap = section.querySelector(selectedSelector);
   const summary = section.querySelector(summarySelector);
+  const detail = summary?.closest("details");
   const selected = new Set(service[key] ?? []);
   optionsWrap.innerHTML = "";
+
+  if (detail && key === "backup") {
+    detail.addEventListener("toggle", () => {
+      openBackupPanelServiceId = detail.open ? service.id : "";
+    });
+  }
 
   options.forEach((name) => {
     const option = document.createElement("label");
@@ -3787,12 +3830,27 @@ function bindLimitedMultiSelect(section, service, key, options, limit, optionsSe
       persistOrganizer();
       updateSelectedItems(selectedWrap, summary, state.services[service.id][key], emptyLabel, unitLabel);
       if (rerenderOnChange) {
+        if (key === "backup") {
+          openBackupPanelServiceId = service.id;
+        }
         renderServices();
       }
     });
 
     optionsWrap.appendChild(option);
   });
+
+  if (detail && key === "backup") {
+    const doneButton = document.createElement("button");
+    doneButton.type = "button";
+    doneButton.className = "secondary-btn musician-role-done";
+    doneButton.textContent = "Done";
+    doneButton.addEventListener("click", () => {
+      openBackupPanelServiceId = "";
+      detail.open = false;
+    });
+    optionsWrap.appendChild(doneButton);
+  }
 
   updateSelectedItems(selectedWrap, summary, service[key], emptyLabel, unitLabel);
 }

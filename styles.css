@@ -1809,6 +1809,12 @@ select:focus,
   margin-top: 18px;
 }
 
+.service-action-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 14px;
+}
+
 .person-schedule-results {
   display: grid;
   gap: 12px;
