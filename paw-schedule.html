@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260325t">
+  <link rel="stylesheet" href="styles.css?v=20260325u">
 </head>
 <body class="standalone-page">
   <main class="standalone-shell paw-standalone-shell">
@@ -43,15 +43,15 @@
         if (!doc || !doc.body) return;
         const appShell = doc.querySelector("#app-shell");
         const organizerSection = doc.querySelector("#section-organizer");
-        const nextHeight = Math.max(
-          doc.body.scrollHeight,
-          doc.documentElement ? doc.documentElement.scrollHeight : 0,
-          doc.body.offsetHeight,
-          appShell ? appShell.scrollHeight : 0,
-          appShell ? appShell.getBoundingClientRect().height : 0,
-          organizerSection ? organizerSection.scrollHeight : 0,
-          organizerSection ? organizerSection.getBoundingClientRect().height : 0
-        );
+        const nextHeight = organizerSection
+          ? Math.max(organizerSection.scrollHeight, organizerSection.getBoundingClientRect().height)
+          : appShell
+            ? Math.max(appShell.scrollHeight, appShell.getBoundingClientRect().height)
+            : Math.max(
+              doc.body.scrollHeight,
+              doc.documentElement ? doc.documentElement.scrollHeight : 0,
+              doc.body.offsetHeight
+            );
         const targetHeight = Math.max(nextHeight + 180, 1800);
         if (Math.abs(targetHeight - pawEmbedLastHeight) > 8) {
           pawEmbedLastHeight = targetHeight;
@@ -72,9 +72,7 @@
         pawEmbedObserver = new MutationObserver(() => window.requestAnimationFrame(resizePawEmbed));
         pawEmbedObserver.observe(doc.body, {
           childList: true,
-          subtree: true,
-          attributes: true,
-          characterData: true
+          subtree: true
         });
         win?.addEventListener("resize", resizePawEmbed);
       } catch (error) {
