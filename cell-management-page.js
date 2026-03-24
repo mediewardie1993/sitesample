@@ -89,6 +89,7 @@ let adminMode = restoreAdminMode();
 let cellManagementState = loadCellManagementState();
 let selectedRecordId = "";
 let selectedLeaderId = "";
+let selectedLeaderHistory = [];
 let transferPromptRecordId = "";
 let hideEmptyNetworkSlots = true;
 let remoteUserSyncInFlight = false;
@@ -732,6 +733,46 @@ function getPrimaryRowRecords() {
     });
 }
 
+function getImmediateLeaderRecords(leaderId) {
+  if (!leaderId) {
+    return [];
+  }
+
+  if (leaderId === "cell-seed-ferdie") {
+    return getPrimaryRowRecords();
+  }
+
+  const byRelationship = sortCellManagementRecords(cellManagementState.records ?? []).filter((record) =>
+    record.id !== leaderId && record.cellLeaderUserId === leaderId
+  );
+
+  const assignments = getLeaderNetworkAssignments(leaderId);
+  const assignedRecords = getNetworkSlotIds()
+    .map((slotId) => getCellManagementRecord(assignments[slotId] || ""))
+    .filter(Boolean);
+
+  const merged = [...byRelationship];
+  assignedRecords.forEach((record) => {
+    if (!merged.some((entry) => entry.id === record.id)) {
+      merged.push(record);
+    }
+  });
+
+  return merged;
+}
+
+function setSelectedLeader(recordId) {
+  if (!recordId) {
+    return;
+  }
+
+  if (selectedLeaderId && selectedLeaderId !== recordId) {
+    selectedLeaderHistory.push(selectedLeaderId);
+  }
+
+  selectedLeaderId = recordId;
+}
+
 function getCellTreeAssignedRecord(slotId) {
   if (slotId.startsWith("C")) {
     const index = Number(slotId.slice(1)) - 1;
@@ -963,12 +1004,13 @@ function buildLeaderWorkspace(selectedLeader, canManage) {
   }
 
   const isProtected = !canEditProtectedRecord(selectedLeader);
-  const assignments = getLeaderNetworkAssignments(selectedLeader.id);
+  const focusedMembers = getImmediateLeaderRecords(selectedLeader.id);
   const memberCandidates = getSelectableExistingMemberRecords(selectedLeader.id, selectedLeader.id);
   const availableProfiles = getManagedCellProfiles();
   const transferCandidates = getTransferTargetCandidates(selectedLeader);
   const selectedLeaderCurrentLevel = selectedLeader.manualLevelOverride || selectedLeader.discipleshipLevel;
-  const visibleSlots = getNetworkSlotIds().filter((slotId) => !hideEmptyNetworkSlots || assignments[slotId]);
+  const slotRecords = Object.fromEntries(getNetworkSlotIds().map((slotId, index) => [slotId, focusedMembers[index] ?? null]));
+  const visibleSlots = getNetworkSlotIds().filter((slotId) => !hideEmptyNetworkSlots || slotRecords[slotId]);
   const transferOpen = transferPromptRecordId === selectedLeader.id;
 
   return `
@@ -978,7 +1020,10 @@ function buildLeaderWorkspace(selectedLeader, canManage) {
           <p class="mini-label">Leader View</p>
           <h2>${escapeHtml(selectedLeader.name)}</h2>
         </div>
-        <button id="toggle-empty-network-slots" class="ghost-btn" type="button">${hideEmptyNetworkSlots ? "Show Empty Positions" : "Hide Empty Positions"}</button>
+        <div class="admin-actions">
+          ${selectedLeaderHistory.length ? `<button id="leader-view-back" class="ghost-btn" type="button">Back</button>` : ""}
+          <button id="toggle-empty-network-slots" class="ghost-btn" type="button">${hideEmptyNetworkSlots ? "Show Empty Positions" : "Hide Empty Positions"}</button>
+        </div>
       </div>
       <div class="managed-ministry-row">
         <strong>${escapeHtml(getCellDisplayPrioritySummary(selectedLeader) || getCellDiscipleshipLabel(selectedLeader.discipleshipLevel))}</strong>
@@ -1019,7 +1064,7 @@ function buildLeaderWorkspace(selectedLeader, canManage) {
           <div class="cell-tree-level-label">Focused Network</div>
           <div class="cell-tree-row">
             ${visibleSlots.map((slotId) => {
-              const assigned = getCellManagementRecord(assignments[slotId] || "");
+              const assigned = slotRecords[slotId];
               return `
                 <article class="cell-tree-node" title="${escapeHtml(assigned ? `${assigned.name} | ${getCellDiscipleshipLabel(assigned.discipleshipLevel)}` : `${slotId} is currently unassigned.`)}">
                   <strong>${escapeHtml(slotId)}</strong>
@@ -1234,9 +1279,17 @@ function bindEditableControls() {
       if (!recordId) {
         return;
       }
-      selectedLeaderId = recordId;
+      setSelectedLeader(recordId);
       renderWorkspace();
     });
+  });
+
+  cellManagementRoot.querySelector("#leader-view-back")?.addEventListener("click", () => {
+    const previousLeaderId = selectedLeaderHistory.pop() || "";
+    if (previousLeaderId) {
+      selectedLeaderId = previousLeaderId;
+    }
+    renderWorkspace();
   });
 
   cellManagementRoot.querySelectorAll(".cell-record-promote").forEach((button) => {
@@ -1254,7 +1307,7 @@ function bindEditableControls() {
         ...entry,
         manualLevelOverride: order[Math.min(order.length - 1, Math.max(0, currentIndex + 1))]
       }));
-      selectedLeaderId = record.id;
+      setSelectedLeader(record.id);
       renderWorkspace();
     });
   });
@@ -1274,7 +1327,7 @@ function bindEditableControls() {
         ...entry,
         manualLevelOverride: order[Math.max(0, currentIndex - 1)]
       }));
-      selectedLeaderId = record.id;
+      setSelectedLeader(record.id);
       renderWorkspace();
     });
   });
@@ -1332,7 +1385,7 @@ function bindEditableControls() {
       assignRecordToFirstOpenNetworkSlot(targetLeaderId, recordId);
 
       transferPromptRecordId = "";
-      selectedLeaderId = recordId;
+      setSelectedLeader(recordId);
       renderWorkspace();
     });
   });
