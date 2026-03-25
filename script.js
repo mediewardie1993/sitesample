@@ -94,8 +94,8 @@ const defaultState = {
   },
   daList: [],
   services: {
-    saturday: { id: "saturday", label: "Adonai", title: "Adonai Only", date: "", worshipLeader: "", backup: [], musicians: [], musicianAssignments: createEmptyMusicianAssignments() },
-    sunday: { id: "sunday", label: "Sunday Service", title: "Sunday Service Only", date: "", worshipLeader: "", backup: [], musicians: [], musicianAssignments: createEmptyMusicianAssignments() }
+    sunday: { id: "sunday", label: "Sunday Service", title: "Sunday Service Only", date: "", worshipLeader: "", backup: [], musicians: [], musicianAssignments: createEmptyMusicianAssignments() },
+    saturday: { id: "saturday", label: "Adonai", title: "Adonai Only", date: "", worshipLeader: "", backup: [], musicians: [], musicianAssignments: createEmptyMusicianAssignments() }
   }
 };
 
