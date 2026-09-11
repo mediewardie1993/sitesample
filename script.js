@@ -17,6 +17,9 @@ const SEAT_RESET_KEY = "jccm-seat-layout-last-reset-v1";
 const CELL_MANAGEMENT_KEY = "jccm-cell-management-v1";
 const SUPABASE_URL = "https://gxgdetvlehwlxsenpijn.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_IAmOapMof9S8qv-rX8WoLg_fBXDqBTs";
+// Paste your deployed Google Apps Script "Web app" URL here (see GOOGLE-SHEETS-SETUP.md).
+// Registrations are logged to the sheet and held as pending until an admin approves them below.
+const GOOGLE_SHEETS_REGISTRATION_URL = "";
 const PAGE_PARAMS = new URLSearchParams(window.location.search);
 const ORGANIZER_EMBED_MODE = PAGE_PARAMS.get("embed") === "organizer";
 
@@ -104,7 +107,7 @@ const defaultAuth = {
     id: "admin-seed",
     name: "Medward",
     username: "mediewardie",
-    usernames: ["mediewardie", "toGodbetheglory"],
+    usernames: ["mediewardie", "toGodbetheglory", "Medward", "medward"],
     password: "",
     role: "headAdmin",
     isCreator: true,
@@ -452,6 +455,7 @@ const fixedPhotoButton = document.querySelector("#fixed-photo-button");
 const fixedPhotoMessage = document.querySelector("#fixed-photo-message");
 const approvedAccounts = document.querySelector("#approved-accounts");
 const recentMembers = document.querySelector("#recent-members");
+const pendingRegistrations = document.querySelector("#pending-registrations");
 const ministryApprovals = document.querySelector("#ministry-approvals");
 const usernameApprovals = document.querySelector("#username-approvals");
 const disciplinaryActions = document.querySelector("#disciplinary-actions");
@@ -1196,26 +1200,143 @@ async function handleRegister(event) {
     return;
   }
 
-  const registrationResult = await registerWithSupabase({
+  const pendingEntry = {
+    id: `pending-${Date.now()}`,
+    name,
     username,
     password,
-    name,
     birthday,
     contactNumber,
-    gender
-  });
+    gender,
+    submittedAt: new Date().toISOString()
+  };
 
-  if (!registrationResult.success) {
-    authMessage.textContent = registrationResult.message || "Account registration failed.";
-    return;
+  authState.pending = [...(authState.pending ?? []), pendingEntry];
+  persistAuth();
+
+  const sheetResult = await postRegistrationToSheet(pendingEntry);
+  if (!sheetResult.success) {
+    console.warn("Could not log registration to Google Sheets.", sheetResult.message);
   }
 
-  syncRemoteUserLocally(registrationResult.user, { password });
-  persistAuth();
   registerForm.reset();
   registerContactNumber.value = "+63";
   setAuthMode("login");
-  authMessage.textContent = "Account created. You can log in now.";
+  authMessage.textContent = "Registration received. An admin will review it before your account is activated.";
+  renderAdmin();
+}
+
+async function postRegistrationToSheet(entry) {
+  if (!GOOGLE_SHEETS_REGISTRATION_URL) {
+    return { success: false, message: "Google Sheets URL is not configured yet." };
+  }
+
+  try {
+    // Apps Script "Web app" endpoints don't return CORS headers for a readable
+    // response, so this is sent fire-and-forget with mode: "no-cors". We can't
+    // confirm the row was written from here — check the sheet directly if unsure.
+    await window.fetch(GOOGLE_SHEETS_REGISTRATION_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({
+        submittedAt: entry.submittedAt,
+        name: entry.name,
+        username: entry.username,
+        birthday: entry.birthday,
+        contactNumber: entry.contactNumber,
+        gender: entry.gender
+      })
+    });
+    return { success: true };
+  } catch (error) {
+    console.warn("Google Sheets registration webhook failed.", error);
+    return { success: false, message: "Could not reach the Google Sheets webhook." };
+  }
+}
+
+function approvePendingRegistration(pendingId) {
+  if (!hasAdminAccess()) {
+    return;
+  }
+
+  const entry = (authState.pending ?? []).find((item) => item.id === pendingId);
+  if (!entry) {
+    return;
+  }
+
+  const newUser = normalizeUserAccount({
+    id: `member-${Date.now()}`,
+    name: entry.name,
+    username: entry.username,
+    usernames: [entry.username],
+    password: entry.password,
+    role: "member",
+    isCreator: false,
+    titles: [],
+    ministries: [],
+    profile: {
+      birthday: entry.birthday,
+      contactNumber: entry.contactNumber,
+      gender: entry.gender
+    }
+  });
+
+  authState.users = [...authState.users, newUser];
+  authState.pending = (authState.pending ?? []).filter((item) => item.id !== pendingId);
+  persistAuth();
+  renderAdmin();
+}
+
+function rejectPendingRegistration(pendingId) {
+  if (!hasAdminAccess()) {
+    return;
+  }
+
+  authState.pending = (authState.pending ?? []).filter((item) => item.id !== pendingId);
+  persistAuth();
+  renderAdmin();
+}
+
+function renderPendingRegistrations(fullAdmin) {
+  if (!pendingRegistrations) {
+    return;
+  }
+
+  pendingRegistrations.innerHTML = "";
+
+  if (!fullAdmin) {
+    pendingRegistrations.innerHTML = `<div class="empty-card">Full admin access is needed to approve registrations.</div>`;
+    return;
+  }
+
+  const entries = [...(authState.pending ?? [])].sort((a, b) => String(b.submittedAt || "").localeCompare(String(a.submittedAt || "")));
+
+  if (!entries.length) {
+    pendingRegistrations.innerHTML = `<div class="empty-card">No pending registrations.</div>`;
+    return;
+  }
+
+  entries.forEach((entry) => {
+    const item = document.createElement("article");
+    item.className = "admin-item";
+    item.innerHTML = `
+      <div class="admin-item-head">
+        <div>
+          <strong>${escapeHtml(entry.name)}</strong>
+          <p>@${escapeHtml(entry.username)} • ${escapeHtml(entry.contactNumber || "")}</p>
+        </div>
+      </div>
+      <div class="admin-actions">
+        <button class="ghost-btn approve-registration-btn" type="button">Approve</button>
+        <button class="ghost-btn reject-registration-btn" type="button">Reject</button>
+      </div>
+    `;
+
+    item.querySelector(".approve-registration-btn").addEventListener("click", () => approvePendingRegistration(entry.id));
+    item.querySelector(".reject-registration-btn").addEventListener("click", () => rejectPendingRegistration(entry.id));
+    pendingRegistrations.appendChild(item);
+  });
 }
 
 function handleRegistrySubmit(event) {
@@ -2777,10 +2898,14 @@ function renderAdmin() {
     usernameApprovals.innerHTML = `<div class="empty-card">Creator, Head Admin, or Admin access required.</div>`;
     disciplinaryActions.innerHTML = `<div class="empty-card">Head Admin or Admin access required.</div>`;
     seatEventApprovals.innerHTML = `<div class="empty-card">Creator, Head Admin, or Admin access required.</div>`;
+    if (pendingRegistrations) {
+      pendingRegistrations.innerHTML = `<div class="empty-card">Admin access required.</div>`;
+    }
     return;
   }
 
   const fullAdmin = hasAdminAccess();
+  renderPendingRegistrations(fullAdmin);
   syncMinistryRequestsFromSupabase();
   recentMembers.innerHTML = "";
   approvedAccounts.innerHTML = "";
@@ -3127,7 +3252,7 @@ function approveUsernameChangeRequest(requestId) {
       ...user,
       username: request.requestedUsername,
       usernames: user.isCreator
-        ? [...new Set([request.requestedUsername, "mediewardie", "toGodbetheglory"])]
+        ? [...new Set([request.requestedUsername, "mediewardie", "toGodbetheglory", "Medward", "medward"])]
         : [request.requestedUsername]
     });
   });
@@ -4944,7 +5069,7 @@ function normalizeUserAccount(user) {
   };
 
   if (normalized.isCreator) {
-    normalized.usernames = [...new Set([...normalized.usernames, "mediewardie", "toGodbetheglory"])];
+    normalized.usernames = [...new Set([...normalized.usernames, "mediewardie", "toGodbetheglory", "Medward", "medward"])];
     normalized.username = normalized.usernames[0];
   }
 

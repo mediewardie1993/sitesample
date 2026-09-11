@@ -1065,8 +1065,26 @@ code {
   gap: 10px;
 }
 
+.ministries-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
 .ministry-card {
   gap: 14px;
+}
+
+.ministries-grid .ministry-card {
+  padding: 14px 16px;
+  align-content: start;
+}
+
+.ministries-grid .ministry-open-link {
+  width: 100%;
+  white-space: normal;
+  word-break: break-word;
 }
 
 .ministry-launch-card {

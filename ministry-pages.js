@@ -90,7 +90,6 @@ function renderMinistriesPage() {
       <div class="ministry-card-head">
         <button class="ghost-btn ministry-open-link" type="button">${escapeHtml(ministry)}</button>
       </div>
-      <p class="ministry-card-copy">${isCellManagement ? "Open the dedicated Cell Management workspace." : (isWorshipTeam ? "Open this ministry page to view updates and the schedule link." : "Open this ministry page to view announcements.")}</p>
     `;
 
       const openButton = card.querySelector(".ministry-open-link");
