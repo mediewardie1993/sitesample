@@ -19,7 +19,7 @@ const SUPABASE_URL = "https://gxgdetvlehwlxsenpijn.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_IAmOapMof9S8qv-rX8WoLg_fBXDqBTs";
 // Paste your deployed Google Apps Script "Web app" URL here (see GOOGLE-SHEETS-SETUP.md).
 // Registrations are logged to the sheet and held as pending until an admin approves them below.
-const GOOGLE_SHEETS_REGISTRATION_URL = "";
+const GOOGLE_SHEETS_REGISTRATION_URL = "https://script.google.com/macros/s/AKfycbxG2NTuWo9rp8rVOowciCT6WLH2B3yF_FaKWCUMRc5kIcTbMvlYRnhfPifN5D_bQtCt/exec";
 const PAGE_PARAMS = new URLSearchParams(window.location.search);
 const ORGANIZER_EMBED_MODE = PAGE_PARAMS.get("embed") === "organizer";
 
