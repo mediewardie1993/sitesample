@@ -109,6 +109,12 @@ code {
   padding: 28px;
 }
 
+#login-gate .auth-card:not(.auth-intro) {
+  background: rgba(17, 38, 29, 0.18);
+  backdrop-filter: blur(6px);
+  border-color: rgba(192, 224, 206, 0.22);
+}
+
 .auth-intro {
   display: grid;
   place-items: center;
