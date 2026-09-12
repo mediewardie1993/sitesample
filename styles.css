@@ -110,9 +110,24 @@ code {
 }
 
 #login-gate .auth-card:not(.auth-intro) {
-  background: rgba(17, 38, 29, 0.18);
-  backdrop-filter: blur(6px);
-  border-color: rgba(192, 224, 206, 0.22);
+  background: transparent;
+  backdrop-filter: none;
+  border: 0;
+  box-shadow: none;
+}
+
+#login-gate .auth-card:not(.auth-intro) * {
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.65), 0 1px 2px rgba(0, 0, 0, 0.85);
+}
+
+#login-gate .auth-tabs {
+  background: rgba(8, 18, 14, 0.4);
+}
+
+#login-gate input,
+#login-gate select {
+  background: rgba(8, 18, 14, 0.45);
+  border-color: rgba(192, 224, 206, 0.3);
 }
 
 .auth-intro {
