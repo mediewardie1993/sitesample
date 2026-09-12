@@ -20,6 +20,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_IAmOapMof9S8qv-rX8WoLg_fBXDqBTs";
 // Paste your deployed Google Apps Script "Web app" URL here (see GOOGLE-SHEETS-SETUP.md).
 // Registrations are logged to the sheet and held as pending until an admin approves them below.
 const GOOGLE_SHEETS_REGISTRATION_URL = "https://script.google.com/macros/s/AKfycbxG2NTuWo9rp8rVOowciCT6WLH2B3yF_FaKWCUMRc5kIcTbMvlYRnhfPifN5D_bQtCt/exec";
+const usernameTypewriterTimers = new WeakMap();
 const PAGE_PARAMS = new URLSearchParams(window.location.search);
 const ORGANIZER_EMBED_MODE = PAGE_PARAMS.get("embed") === "organizer";
 
@@ -688,6 +689,8 @@ function initializeApp() {
   }
   buildSeatLayout();
   renderApp();
+  typewriterPlaceholder(registerForm?.classList.contains("auth-hidden") ? loginUsername : registerUsername,
+    registerForm?.classList.contains("auth-hidden") ? "Enter username" : "Choose a username");
 }
 
 function openSeatsPage() {
@@ -1098,6 +1101,33 @@ function handleWindowScroll() {
   }, 1000);
 }
 
+function typewriterPlaceholder(inputEl, text, speed = 65) {
+  if (!inputEl) {
+    return;
+  }
+
+  const existingTimer = usernameTypewriterTimers.get(inputEl);
+  if (existingTimer) {
+    window.clearInterval(existingTimer);
+  }
+
+  let charIndex = 0;
+  inputEl.placeholder = "";
+
+  const timer = window.setInterval(() => {
+    charIndex += 1;
+    const typedSoFar = text.slice(0, charIndex);
+    inputEl.placeholder = charIndex < text.length ? `${typedSoFar}|` : typedSoFar;
+
+    if (charIndex >= text.length) {
+      window.clearInterval(timer);
+      usernameTypewriterTimers.delete(inputEl);
+    }
+  }, speed);
+
+  usernameTypewriterTimers.set(inputEl, timer);
+}
+
 function setAuthMode(mode) {
   const loginActive = mode === "login";
   showLoginButton.classList.toggle("auth-tab-active", loginActive);
@@ -1105,6 +1135,12 @@ function setAuthMode(mode) {
   loginForm.classList.toggle("auth-hidden", !loginActive);
   registerForm.classList.toggle("auth-hidden", loginActive);
   authMessage.textContent = "";
+
+  if (loginActive) {
+    typewriterPlaceholder(loginUsername, "Enter username");
+  } else {
+    typewriterPlaceholder(registerUsername, "Choose a username");
+  }
 }
 
 async function handleLogin(event) {
